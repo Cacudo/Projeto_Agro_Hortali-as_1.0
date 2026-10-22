@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgroPulse - Relatórios</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon"><i class="fa-solid fa-leaf"></i></div>
+                <span>AgroPulse</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/visao-geral"><i class="fa-solid fa-chart-pie"></i> Visão Geral</a>
+                <a href="/pulverizacao"><i class="fa-solid fa-droplet"></i> Pulverização</a>
+                <a href="/relatorios" class="active"><i class="fa-solid fa-chart-line"></i> Relatórios</a>
+                <a href="/configuracoes"><i class="fa-solid fa-gear"></i> Configurações</a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-status"><span class="status-dot"></span> Sistema Ativo</div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="page-header">
+                <h1>Relatórios Gerais</h1>
+                <p>Resumo detalhado das operações cadastradas.</p>
+            </header>
+
+            <section class="card">
+                <div class="card-header">
+                    <i class="fa-solid fa-file-invoice"></i>
+                    <h2>Resumo de Operações</h2>
+                </div>
+                <p style="margin-bottom: 15px; color: #64748b;">Consolidado dos dados cadastrados:</p>
+                <ul style="list-style: none; padding: 0;">
+                    <li style="margin-bottom: 10px;"><strong>Total de Talhões:</strong> {{ total_talhoes }}</li>
+                    <li style="margin-bottom: 10px;"><strong>Área Coberta:</strong> {{ total_area }} ha</li>
+                    <li style="margin-bottom: 10px;"><strong>Volume Consumido:</strong> {{ total_volume }} L</li>
+                </ul>
+            </section>
+        </main>
+    </div>
+</body>
+</html>

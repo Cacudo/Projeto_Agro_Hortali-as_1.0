@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgroPulse - Gestão Agrícola</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon"><i class="fa-solid fa-leaf"></i></div>
+                <span>AgroPulse</span>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="/visao-geral" class="{% if secao_ativa == 'visao_geral' or not secao_ativa %}active{% endif %}">
+                    <i class="fa-solid fa-chart-pie"></i> Visão Geral
+                </a>
+                <a href="/pulverizacao" class="{% if secao_ativa == 'pulverizacao' %}active{% endif %}">
+                    <i class="fa-solid fa-droplet"></i> Pulverização
+                </a>
+                <a href="/relatorios" class="{% if secao_ativa == 'relatorios' %}active{% endif %}">
+                    <i class="fa-solid fa-chart-line"></i> Relatórios
+                </a>
+                <a href="/configuracoes" class="{% if secao_ativa == 'configuracoes' %}active{% endif %}">
+                    <i class="fa-solid fa-gear"></i> Configurações
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-status">
+                    <span class="status-dot"></span> Sistema Ativo
+                </div>
+            </div>
+        </aside>
+
+        <!-- Conteúdo Principal -->
+        <main class="main-content">
+
+            {% if secao_ativa == 'configuracoes' %}
+                <!-- Seção Configurações -->
+                <header class="page-header">
+                    <h1>Configurações do Sistema</h1>
+                    <p>Gerencie as preferências da sua aplicação.</p>
+                </header>
+
+                <section class="card">
+                    <div class="card-header">
+                        <i class="fa-solid fa-sliders"></i>
+                        <h2>Preferências Gerais</h2>
+                    </div>
+                    <p style="color: #64748b;">Opções de fazenda, unidades de medida e dados da propriedade.</p>
+                </section>
+
+            {% elif secao_ativa == 'relatorios' %}
+                <!-- Seção Relatórios -->
+                <header class="page-header">
+                    <h1>Relatórios Gerais</h1>
+                    <p>Resumo detalhado das operações registradas.</p>
+                </header>
+
+                <section class="card">
+                    <div class="card-header">
+                        <i class="fa-solid fa-file-invoice"></i>
+                        <h2>Resumo de Operações</h2>
+                    </div>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="margin-bottom: 12px; font-size: 1.1rem;"><strong>Total de Talhões Cadastrados:</strong> {{ total_talhoes }}</li>
+                        <li style="margin-bottom: 12px; font-size: 1.1rem;"><strong>Área Total Coberta:</strong> {{ total_area }} ha</li>
+                        <li style="margin-bottom: 12px; font-size: 1.1rem;"><strong>Volume Total Consumido:</strong> {{ total_volume }} L</li>
+                    </ul>
+                </section>
+
+            {% else %}
+                <!-- Seção Visão Geral e Pulverização -->
+                <header class="page-header">
+                    <h1>Gestão de Pulverização</h1>
+                    <p>Acompanhe e registe o volume de calda por talhão em tempo real.</p>
+                </header>
+
+                <!-- Cards de Métricas -->
+                <section class="metrics-grid">
+                    <div class="metric-card green">
+                        <div class="metric-icon"><i class="fa-solid fa-location-dot"></i></div>
+                        <div class="metric-details">
+                            <span>Total de Talhões</span>
+                            <h2>{{ total_talhoes }}</h2>
+                        </div>
+                    </div>
+
+                    <div class="metric-card blue">
+                        <div class="metric-icon"><i class="fa-solid fa-vector-square"></i></div>
+                        <div class="metric-details">
+                            <span>Área Total Coberta</span>
+                            <h2>{{ total_area }} <small>ha</small></h2>
+                        </div>
+                    </div>
+
+                    <div class="metric-card orange">
+                        <div class="metric-icon"><i class="fa-solid fa-flask"></i></div>
+                        <div class="metric-details">
+                            <span>Volume de Calda</span>
+                            <h2>{{ total_volume }} <small>L</small></h2>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Formulário -->
+                <section class="card" id="form-secao">
+                    <div class="card-header">
+                        <i class="fa-solid fa-circle-plus"></i>
+                        <h2>Novo Registo</h2>
+                    </div>
+
+                    <form action="/add" method="POST">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="talhao">Nome do Talhão</label>
+                                <input type="text" id="talhao" name="talhao" placeholder="Ex: Talhão Norte #02" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="cultura">Cultura</label>
+                                <input type="text" id="cultura" name="cultura" placeholder="Ex: Soja, Milho, Algodão" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="area">Área (ha)</label>
+                                <input type="number" step="0.1" id="area" name="area" placeholder="0.0" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="dosagem">Dosagem (L/ha)</label>
+                                <input type="number" step="0.1" id="dosagem" name="dosagem" placeholder="0.0" required>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">
+                                <i class="fa-solid fa-check"></i> Cadastrar e Calcular
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- Tabela -->
+                <section class="card">
+                    <div class="card-header space-between">
+                        <div class="header-title">
+                            <i class="fa-solid fa-list-check"></i>
+                            <h2>Registos Efetuados</h2>
+                        </div>
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Buscar talhão...">
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table id="recordsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Talhão</th>
+                                    <th>Cultura</th>
+                                    <th>Área</th>
+                                    <th>Dosagem</th>
+                                    <th>Volume Total</th>
+                                    <th style="text-align: right;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if registos and registos|length > 0 %}
+                                    {% for r in registos %}
+                                    <tr>
+                                        <td class="id-cell">#{{ r.id }}</td>
+                                        <td><strong>{{ r.talhao }}</strong></td>
+                                        <td><span class="badge">{{ r.cultura }}</span></td>
+                                        <td>{{ r.area }} ha</td>
+                                        <td>{{ r.dosagem }} L/ha</td>
+                                        <td><strong class="highlight-val">{{ r.volume_total }} L</strong></td>
+                                        <td style="text-align: right;">
+                                            <a href="/deletar/{{ r.id }}" class="btn-icon danger" title="Excluir"><i class="fa-solid fa-trash"></i></a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="7">
+                                            <div class="empty-state">
+                                                <i class="fa-solid fa-seedling"></i>
+                                                <p>Nenhum registo adicionado até ao momento.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            {% endif %}
+
+        </main>
+    </div>
+
+    <script>
+        function filterTable() {
+            const input = document.getElementById("searchInput");
+            const filter = input.value.toLowerCase();
+            const table = document.getElementById("recordsTable");
+            const tr = table.getElementsByTagName("tr");
+
+            for (let i = 1; i < tr.length; i++) {
+                let td = tr[i].getElementsByTagName("td")[1];
+                if (td) {
+                    let txtValue = td.textContent || td.innerText;
+                    if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                        tr[i].style.display = "";
+                    } else {
+                        tr[i].style.display = "none";
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

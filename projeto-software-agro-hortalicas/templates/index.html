@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Gestão Agro - Pulverização</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <div class="container">
+    <h1>🌾 Sistema de Gestão Agrícola - Pulverização</h1>
+
+    <!-- ADICIONE OS BOTÕES AQUI -->
+    <div style="margin-bottom: 20px;">
+        <a href="{{ url_for('index') }}" class="btn">Novo Cadastro</a>
+        <a href="{{ url_for('index') }}" class="btn">Ver Estoque</a>
+    </div>
+
+    <!-- FORMULÁRIO DE CADASTRO -->
+    <div class="card">
+            <h2>Cadastrar Novo Talhão</h2>
+            <form action="{{ url_for('cadastrar') }}" method="POST">
+                <input type="text" name="talhao" placeholder="Nome do Talhão (ex: Gleba A)" required>
+                <input type="text" name="cultura" placeholder="Cultura (ex: Soja, Milho)" required>
+                <input type="number" step="0.01" name="area_ha" placeholder="Área (Hectares)" required>
+                <input type="number" step="0.01" name="dosagem_l_ha" placeholder="Dosagem (L/ha)" required>
+                <button type="submit">Cadastrar e Calcular</button>
+            </form>
+        </div>
+
+        <!-- LISTAGEM E CÁLCULOS -->
+        <div class="card">
+            <h2>Registros e Volume de Calda Aplicado</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Talhão</th>
+                        <th>Cultura</th>
+                        <th>Área (ha)</th>
+                        <th>Dosagem (L/ha)</th>
+                        <th>Volume Total (L) [Cálculo]</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in registros %}
+                    <tr>
+                        <td>{{ item.id }}</td>
+                        <td>{{ item.talhao }}</td>
+                        <td>{{ item.cultura }}</td>
+                        <td>{{ item.area_ha }} ha</td>
+                        <td>{{ item.dosagem_l_ha }} L/ha</td>
+                        <td><strong>{{ item.volume_total }} L</strong></td>
+                        <td>
+                            <a href="{{ url_for('editar', id=item.id) }}" class="btn-edit">Editar</a>
+                            <a href="{{ url_for('deletar', id=item.id) }}" class="btn-delete"
+                                onclick="return confirm('Tem certeza?')">Excluir</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+
+</html>

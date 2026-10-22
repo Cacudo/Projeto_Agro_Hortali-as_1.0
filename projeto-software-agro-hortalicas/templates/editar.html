@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Registro - Agro</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>✏️ Editar Registro #{{ registro.id }}</h1>
+        <div class="card">
+           <form action="{{ url_for('editar', id=registro.id) }}" method="POST">
+                <label>Talhão:</label>
+                <input type="text" name="talhao" value="{{ registro.talhao }}" required>
+                
+                <label>Cultura:</label>
+                <input type="text" name="cultura" value="{{ registro.cultura }}" required>
+                
+                <label>Área (ha):</label>
+                <input type="number" step="0.01" name="area_ha" value="{{ registro.area_ha }}" required>
+                
+                <label>Dosagem (L/ha):</label>
+                <input type="number" step="0.01" name="dosagem_l_ha" value="{{ registro.dosagem_l_ha }}" required>
+                
+                <button type="submit">Salvar Alterações</button>
+                <a href="{{ url_for('index') }}" class="btn-cancel">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
