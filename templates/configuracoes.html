@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block titulo %}Configurações{% endblock %}
+{% block conteudo %}
+<header class="page-header">
+    <h1>Configurações</h1>
+    <p>Sua senha e os usuários com acesso ao sistema. Todos os usuários veem os mesmos dados da propriedade.</p>
+</header>
+
+<div class="grid-2">
+    <section class="card">
+        <div class="card-header"><i class="fa-solid fa-key"></i><h2>Alterar minha senha</h2></div>
+        <form method="post" action="{{ url_for('configuracoes.alterar_senha') }}">
+            {{ m.csrf() }}
+            <div class="form-stack">
+                <div class="form-group"><label for="senha_atual">Senha atual</label><input type="password" id="senha_atual" name="senha_atual" autocomplete="current-password" required></div>
+                <div class="form-group"><label for="nova_senha">Nova senha (mínimo 8 caracteres)</label><input type="password" id="nova_senha" name="senha" minlength="8" autocomplete="new-password" required></div>
+                <div class="form-group"><label for="nova_confirmacao">Confirme a nova senha</label><input type="password" id="nova_confirmacao" name="confirmacao" minlength="8" autocomplete="new-password" required></div>
+            </div>
+            <div class="form-actions"><button type="submit" class="btn btn-primary">Alterar senha</button></div>
+        </form>
+    </section>
+
+    <section class="card">
+        <div class="card-header"><i class="fa-solid fa-user-plus"></i><h2>Novo usuário</h2></div>
+        <form method="post" action="{{ url_for('configuracoes.novo_usuario') }}">
+            {{ m.csrf() }}
+            <div class="form-stack">
+                <div class="form-group"><label for="nome">Nome</label><input type="text" id="nome" name="nome" value="{{ dados.get('nome', '') }}" maxlength="80" required></div>
+                <div class="form-group"><label for="email">E-mail</label><input type="email" id="email" name="email" value="{{ dados.get('email', '') }}" maxlength="120" required></div>
+                <div class="form-group"><label for="senha">Senha inicial</label><input type="password" id="senha" name="senha" minlength="8" autocomplete="new-password" required></div>
+                <div class="form-group"><label for="confirmacao">Confirme a senha</label><input type="password" id="confirmacao" name="confirmacao" minlength="8" autocomplete="new-password" required></div>
+            </div>
+            <div class="form-actions"><button type="submit" class="btn btn-primary">Criar usuário</button></div>
+        </form>
+    </section>
+</div>
+
+<section class="card">
+    <div class="card-header"><i class="fa-solid fa-users"></i><h2>Usuários</h2></div>
+    <div class="table-container">
+        <table class="table-cards">
+            <thead><tr><th>Nome</th><th>E-mail</th><th>Desde</th><th>Situação</th><th class="actions">Ações</th></tr></thead>
+            <tbody>
+            {% for u in usuarios %}
+                <tr class="{{ 'row-muted' if not u.ativo }}">
+                    <td data-label="Nome"><strong>{{ u.nome }}</strong>{% if u.id == g.usuario.id %} <span class="tag tag-neutral">você</span>{% endif %}</td>
+                    <td data-label="E-mail">{{ u.email }}</td>
+                    <td data-label="Desde">{{ u.criado_em.date()|data_br }}</td>
+                    <td data-label="Situação">{% if u.ativo %}<span class="tag tag-success">Ativo</span>{% else %}<span class="tag tag-neutral">Desativado</span>{% endif %}</td>
+                    <td class="actions">
+                        {% if u.id != g.usuario.id %}
+                        <form method="post" action="{{ url_for('configuracoes.alternar_usuario', usuario_id=u.id) }}" data-confirm="{{ 'Desativar' if u.ativo else 'Reativar' }} o acesso de {{ u.nome }}?">
+                            {{ m.csrf() }}<button class="btn btn-ghost btn-sm">{{ 'Desativar' if u.ativo else 'Reativar' }}</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

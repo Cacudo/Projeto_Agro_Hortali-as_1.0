@@ -1,0 +1,25 @@
+{% extends "auth/base_auth.html" %}
+{% block titulo %}Primeiro acesso{% endblock %}
+{% block subtitulo %}Primeiro acesso: crie o usuário administrador.{% endblock %}
+{% block formulario %}
+<form method="post" class="auth-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="campo">
+        <label for="nome">Nome</label>
+        <input type="text" id="nome" name="nome" value="{{ dados.get('nome', '') }}" maxlength="80" autocomplete="name" required autofocus>
+    </div>
+    <div class="campo">
+        <label for="email">E-mail</label>
+        <input type="email" id="email" name="email" value="{{ dados.get('email', '') }}" maxlength="120" autocomplete="username" required>
+    </div>
+    <div class="campo">
+        <label for="senha">Senha (mínimo 8 caracteres)</label>
+        <input type="password" id="senha" name="senha" minlength="8" autocomplete="new-password" required>
+    </div>
+    <div class="campo">
+        <label for="confirmacao">Confirme a senha</label>
+        <input type="password" id="confirmacao" name="confirmacao" minlength="8" autocomplete="new-password" required>
+    </div>
+    <button type="submit" class="botao">Criar acesso e entrar</button>
+</form>
+{% endblock %}

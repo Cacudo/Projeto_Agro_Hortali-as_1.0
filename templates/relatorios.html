@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block titulo %}Relatórios{% endblock %}
+{% block conteudo %}
+{% set filtros = {'inicio': inicio.isoformat(), 'fim': fim.isoformat(), 'produto_id': produto_id or ''} %}
+{% macro botao_csv(tipo, rotulo) %}
+<a class="btn btn-ghost btn-sm" href="{{ url_for('relatorios.exportar', tipo=tipo, **filtros) }}"><i class="fa-solid fa-file-csv"></i> {{ rotulo }}</a>
+{% endmacro %}
+<header class="page-header">
+    <h1>Relatórios</h1>
+    <p>De {{ inicio|data_br }} a {{ fim|data_br }}{% if produto %} · somente {{ produto.nome }}{% endif %}. Vendas e perdas canceladas não são consideradas.</p>
+</header>
+
+<section class="card">
+    {{ m.filtro_periodo('relatorios.index', inicio, fim, produtos, produto_id) }}
+    <div class="export-bar">
+        <span>Exportar CSV:</span>
+        {{ botao_csv('produtos', 'Resumo por produto') }}
+        {{ botao_csv('colheitas', 'Colheitas') }}
+        {{ botao_csv('vendas', 'Itens vendidos') }}
+        {{ botao_csv('perdas', 'Perdas') }}
+        {{ botao_csv('motivos', 'Motivos de perda') }}
+        {{ botao_csv('movimentacoes', 'Movimentações') }}
+    </div>
+</section>
+
+<section class="card">
+    <div class="card-header"><i class="fa-solid fa-file-invoice-dollar"></i><h2>Resumo financeiro</h2></div>
+    <dl class="finance-list">
+        <div><dt>Faturamento bruto</dt><dd>{{ financeiro.faturamento_bruto|moeda }}</dd></div>
+        <div><dt>(−) Descontos</dt><dd>{{ financeiro.descontos|moeda }}</dd></div>
+        <div class="total"><dt>Faturamento líquido</dt><dd>{{ financeiro.faturamento_liquido|moeda }}</dd></div>
+        <div><dt>(−) Custo estimado dos produtos vendidos</dt>
+            <dd>{% if financeiro.custo_vendidos_completo %}{{ financeiro.custo_vendidos|moeda }}{% else %}<span class="muted">incompleto</span>{% endif %}</dd></div>
+        <div class="total"><dt>Margem bruta estimada</dt>
+            <dd>{% if financeiro.margem_bruta is not none %}{{ financeiro.margem_bruta|moeda }}{% else %}<span class="muted">indisponível</span>{% endif %}</dd></div>
+        <div><dt>(−) Perdas a custo (prejuízo estimado)</dt>
+            <dd>{% if financeiro.perdas_custo_completo %}{{ financeiro.perdas_custo|moeda }}{% else %}<span class="muted">incompleto</span>{% endif %}</dd></div>
+        <div class="total"><dt>Resultado estimado</dt>
+            <dd>{% if financeiro.resultado_estimado is not none %}{{ financeiro.resultado_estimado|moeda }}{% else %}<span class="muted">indisponível</span>{% endif %}</dd></div>
+        <div class="aside"><dt>Perdas a preço de venda (receita não obtida)</dt><dd>{{ financeiro.perdas_valor_venda|moeda }}</dd></div>
+        <div class="aside"><dt>Número de vendas · ticket médio</dt><dd>{{ financeiro.numero_vendas }} · {{ financeiro.ticket_medio|moeda }}</dd></div>
+    </dl>
+    <div class="note">
+        <i class="fa-solid fa-circle-info"></i>
+        <div>
+            <p>Os valores de custo vêm do <strong>custo de produção cadastrado</strong> em cada produto no momento da venda ou da perda.
+            O <strong>resultado estimado</strong> não é o lucro real: ele não inclui despesas como frete, embalagens, taxas da feira e mão de obra que não estejam no custo cadastrado.</p>
+            {% if not financeiro.custo_vendidos_completo or not financeiro.perdas_custo_completo %}
+            <p>Há {{ financeiro.itens_sem_custo }} item(ns) vendido(s) e {{ financeiro.perdas_sem_custo }} perda(s) sem custo cadastrado no período, por isso a margem e o resultado não são exibidos. Cadastre o custo dos produtos para obter essas estimativas.</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="card">
+    <div class="card-header"><i class="fa-solid fa-table"></i><h2>Colheitas, vendas e perdas por produto</h2></div>
+    {% if por_produto %}
+    <div class="table-container">
+        <table class="table-cards">
+            <thead><tr><th>Produto</th><th class="num">Colhido</th><th class="num">Vendido</th><th class="num">Perdido</th><th class="num">Índice de perda</th><th class="num">Faturamento líquido</th><th class="num">Perdas (preço de venda)</th><th class="num">Perdas (custo)</th></tr></thead>
+            <tbody>
+            {% for l in por_produto %}
+                <tr>
+                    <td data-label="Produto"><strong>{{ l.produto.nome }}</strong></td>
+                    <td data-label="Colhido" class="num">{{ l.colhido|qtd(l.produto.unidade) }}</td>
+                    <td data-label="Vendido" class="num">{{ l.vendido|qtd(l.produto.unidade) }}</td>
+                    <td data-label="Perdido" class="num">{{ l.perdido|qtd(l.produto.unidade) }}</td>
+                    <td data-label="Índice de perda" class="num">{{ l.indice_perda|percentual }}</td>
+                    <td data-label="Faturamento líquido" class="num">{{ l.faturamento|moeda }}</td>
+                    <td data-label="Perdas (preço de venda)" class="num">{{ l.perdas_valor_venda|moeda }}</td>
+                    <td data-label="Perdas (custo)" class="num">{% if l.perdas_sem_custo %}<span class="muted">sem custo</span>{% else %}{{ l.perdas_custo|moeda }}{% endif %}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="hint">Índice de perda = perdido ÷ (vendido + perdido). Faturamento por produto inclui o rateio proporcional dos descontos de cada venda.</p>
+    {% else %}
+        {{ m.vazio('fa-seedling', 'Nenhum registro no período.') }}
+    {% endif %}
+</section>
+
+<div class="grid-2">
+    <section class="card">
+        <div class="card-header"><i class="fa-solid fa-ranking-star"></i><h2>Produtos mais vendidos</h2></div>
+        {% if mais_vendidos %}
+            <ol class="rank-list">
+            {% for l in mais_vendidos %}
+                <li><span>{{ l.produto.nome }}</span><span>{{ l.vendido|qtd(l.produto.unidade) }}</span><strong>{{ l.faturamento|moeda }}</strong></li>
+            {% endfor %}
+            </ol>
+        {% else %}{{ m.vazio('fa-ranking-star', 'Nenhuma venda no período.') }}{% endif %}
+    </section>
+    <section class="card">
+        <div class="card-header"><i class="fa-solid fa-heart-crack"></i><h2>Produtos com maiores perdas</h2></div>
+        {% if maiores_perdas %}
+            <ol class="rank-list">
+            {% for l in maiores_perdas %}
+                <li><span>{{ l.produto.nome }}</span><span>{{ l.perdido|qtd(l.produto.unidade) }} · {{ l.indice_perda|percentual }}</span><strong>{{ l.perdas_valor_venda|moeda }}</strong></li>
+            {% endfor %}
+            </ol>
+        {% else %}{{ m.vazio('fa-face-smile', 'Nenhuma perda no período.') }}{% endif %}
+    </section>
+</div>
+
+<section class="card">
+    <div class="card-header"><i class="fa-solid fa-magnifying-glass-chart"></i><h2>Motivos de descarte</h2></div>
+    {% if motivos %}
+    <div class="table-container">
+        <table class="table-cards">
+            <thead><tr><th>Motivo</th><th class="num">Ocorrências</th><th class="num">Valor a preço de venda</th><th>Produtos afetados</th></tr></thead>
+            <tbody>
+            {% for g in motivos %}
+                <tr>
+                    <td data-label="Motivo"><strong>{{ g.rotulo }}</strong></td>
+                    <td data-label="Ocorrências" class="num">{{ g.ocorrencias }}</td>
+                    <td data-label="Valor" class="num">{{ g.valor_venda|moeda }}</td>
+                    <td data-label="Produtos">{{ g.produtos }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}{{ m.vazio('fa-face-smile', 'Nenhuma perda no período.') }}{% endif %}
+</section>
+{% endblock %}

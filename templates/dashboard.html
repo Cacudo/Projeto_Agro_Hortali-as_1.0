@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block titulo %}Painel{% endblock %}
+{% block conteudo %}
+<header class="page-header page-header-row">
+    <div>
+        <h1>Painel</h1>
+        <p>Resumo de {{ inicio|data_br }} a {{ fim|data_br }}. Estoque e alertas mostram a situação de agora.</p>
+    </div>
+    <div class="chip-group" aria-label="Período">
+        {% for dias, ini, ativo in atalhos %}
+            <a class="chip {{ 'active' if ativo }}" href="{{ url_for('painel.index', inicio=ini.isoformat(), fim=hoje.isoformat()) }}">{{ dias }} dias</a>
+        {% endfor %}
+    </div>
+</header>
+
+<section class="quick-actions" aria-label="Registros rápidos">
+    <a class="quick-action qa-venda" href="{{ url_for('vendas.nova') }}"><i class="fa-solid fa-cash-register"></i><span>Registrar venda</span></a>
+    <a class="quick-action qa-colheita" href="{{ url_for('colheitas.nova') }}"><i class="fa-solid fa-basket-shopping"></i><span>Registrar colheita</span></a>
+    <a class="quick-action qa-perda" href="{{ url_for('perdas.nova') }}"><i class="fa-solid fa-trash-can"></i><span>Registrar perda</span></a>
+</section>
+
+{% if total_produtos == 0 %}
+<section class="card onboarding">
+    <div class="card-header"><i class="fa-solid fa-seedling"></i><h2>Comece por aqui</h2></div>
+    <ol>
+        <li>Cadastre as hortaliças que você produz (nome, unidade, preço e, se souber, o custo).</li>
+        <li>Registre cada colheita: a quantidade entra automaticamente no estoque.</li>
+        <li>Registre vendas e perdas: o estoque é baixado e os indicadores são atualizados.</li>
+    </ol>
+    <a class="btn btn-primary" href="{{ url_for('produtos.novo') }}"><i class="fa-solid fa-plus"></i> Cadastrar primeiro produto</a>
+</section>
+{% endif %}
+
+<section class="metrics-grid">
+    <div class="metric-card green">
+        <div class="metric-icon"><i class="fa-solid fa-sack-dollar"></i></div>
+        <div class="metric-details">
+            <span>Faturamento líquido</span>
+            <h2>{{ financeiro.faturamento_liquido|moeda }}</h2>
+            <small>{{ financeiro.numero_vendas }} venda(s){% if financeiro.ticket_medio %} · média {{ financeiro.ticket_medio|moeda }}{% endif %}</small>
+        </div>
+    </div>
+    <div class="metric-card red">
+        <div class="metric-icon"><i class="fa-solid fa-trash-can"></i></div>
+        <div class="metric-details">
+            <span>Perdas no período</span>
+            <h2>{{ financeiro.perdas_registros }} <small>registro(s)</small></h2>
+            <small title="Valor que seria obtido se os produtos perdidos tivessem sido vendidos pelo preço cadastrado">
+                {{ financeiro.perdas_valor_venda|moeda }} a preço de venda
+            </small>
+        </div>
+    </div>
+    <div class="metric-card blue">
+        <div class="metric-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+        <div class="metric-details">
+            <span>Produtos com estoque</span>
+            <h2>{{ com_estoque }} <small>de {{ total_produtos }}</small></h2>
+            <small>{{ total_produtos }} produto(s) ativo(s)</small>
+        </div>
+    </div>
+    <div class="metric-card orange">
+        <div class="metric-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="metric-details">
+            <span>Precisam de atenção</span>
+            <h2>{{ estoque_baixo|length + sem_estoque|length + alertas_validade|length }}</h2>
+            <small>{{ estoque_baixo|length }} baixo · {{ sem_estoque|length }} zerado · {{ alertas_validade|length }} validade</small>
+        </div>
+    </div>
+</section>
+
+<div class="grid-2">
+    <section class="card">
+        <div class="card-header"><i class="fa-solid fa-bell"></i><h2>Alertas</h2></div>
+        {% if not (estoque_baixo or sem_estoque or alertas_validade) %}
+            {{ m.vazio('fa-circle-check', 'Nenhum alerta no momento.' if total_produtos else 'Os alertas aparecem quando houver produtos cadastrados.') }}
+        {% else %}
+            <ul class="alert-list">
+                {% for a in alertas_validade %}
+                    <li class="{{ 'alert-danger' if a.vencido else 'alert-warning' }}">
+                        <i class="fa-solid fa-clock"></i>
+                        <div>
+                            <strong>{{ a.colheita.produto.nome }}</strong> — lote {{ a.colheita.lote }}:
+                            {{ a.saldo|qtd(a.colheita.produto.unidade) }}
+                            {% if a.vencido %}com prazo de conservação vencido em {{ a.colheita.validade|data_br }}.
+                            {% elif a.dias == 0 %}vence hoje.
+                            {% else %}vence em {{ a.dias }} dia(s).{% endif %}
+                        </div>
+                        <a class="btn btn-ghost btn-sm" href="{{ url_for('perdas.nova', produto_id=a.colheita.produto_id, colheita_id=a.colheita.id) }}">Registrar perda</a>
+                    </li>
+                {% endfor %}
+                {% for l in sem_estoque %}
+                    <li class="alert-danger">
+                        <i class="fa-solid fa-box-open"></i>
+                        <div><strong>{{ l.produto.nome }}</strong> está sem estoque.</div>
+                        <a class="btn btn-ghost btn-sm" href="{{ url_for('colheitas.nova', produto_id=l.produto.id) }}">Registrar colheita</a>
+                    </li>
+                {% endfor %}
+                {% for l in estoque_baixo %}
+                    <li class="alert-warning">
+                        <i class="fa-solid fa-arrow-trend-down"></i>
+                        <div><strong>{{ l.produto.nome }}</strong>: {{ l.saldo|qtd(l.produto.unidade) }} (mínimo {{ l.produto.estoque_minimo|qtd(l.produto.unidade) }}).</div>
+                        <a class="btn btn-ghost btn-sm" href="{{ url_for('colheitas.nova', produto_id=l.produto.id) }}">Registrar colheita</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </section>
+
+    <section class="card">
+        <div class="card-header"><i class="fa-solid fa-chart-column"></i><h2>Faturamento por dia</h2></div>
+        {% if grafico and financeiro.numero_vendas %}
+            <div class="bar-chart" role="img" aria-label="Faturamento diário de {{ inicio|data_br }} a {{ fim|data_br }}">
+                {% for d in grafico %}
+                    <div class="bar-col" title="{{ d.dia|data_br }}: {{ d.valor|moeda }}">
+                        <div class="bar" style="height: {{ [d.percentual, 1 if d.valor else 0]|max }}%"></div>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="bar-axis"><span>{{ inicio|data_br }}</span><span>{{ fim|data_br }}</span></div>
+        {% elif not grafico %}
+            {{ m.vazio('fa-chart-column', 'Gráfico disponível para períodos de até 92 dias.') }}
+        {% else %}
+            {{ m.vazio('fa-chart-column', 'Nenhuma venda no período.', url_for('vendas.nova'), 'Registrar venda') }}
+        {% endif %}
+    </section>
+</div>
+
+<div class="grid-2">
+    <section class="card">
+        <div class="card-header"><i class="fa-solid fa-ranking-star"></i><h2>Mais vendidos</h2></div>
+        {% if mais_vendidos %}
+            <ul class="rank-list">
+                {% for l in mais_vendidos %}
+                    <li><span>{{ l.produto.nome }}</span><span>{{ l.vendido|qtd(l.produto.unidade) }}</span><strong>{{ l.faturamento|moeda }}</strong></li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            {{ m.vazio('fa-ranking-star', 'Nenhuma venda no período.') }}
+        {% endif %}
+    </section>
+    <section class="card">
+        <div class="card-header"><i class="fa-solid fa-heart-crack"></i><h2>Maiores perdas</h2></div>
+        {% if maiores_perdas %}
+            <ul class="rank-list">
+                {% for l in maiores_perdas %}
+                    <li>
+                        <span>{{ l.produto.nome }}</span>
+                        <span>{{ l.perdido|qtd(l.produto.unidade) }}{% if l.indice_perda is not none %} · {{ l.indice_perda|percentual }} das saídas{% endif %}</span>
+                        <strong title="Valor a preço de venda">{{ l.perdas_valor_venda|moeda }}</strong>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            {{ m.vazio('fa-face-smile', 'Nenhuma perda registrada no período.') }}
+        {% endif %}
+    </section>
+</div>
+
+<section class="card">
+    <div class="card-header space-between">
+        <div class="header-title"><i class="fa-solid fa-table"></i><h2>Produção, vendas e perdas por produto</h2></div>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('relatorios.index', inicio=inicio.isoformat(), fim=fim.isoformat()) }}">Ver relatório completo</a>
+    </div>
+    {% if por_produto %}
+    <div class="table-container">
+        <table class="table-cards">
+            <thead><tr><th>Produto</th><th class="num">Colhido</th><th class="num">Vendido</th><th class="num">Perdido</th><th class="num">Índice de perda</th><th class="num">Faturamento</th></tr></thead>
+            <tbody>
+            {% for l in por_produto %}
+                <tr>
+                    <td data-label="Produto"><strong>{{ l.produto.nome }}</strong></td>
+                    <td data-label="Colhido" class="num">{{ l.colhido|qtd(l.produto.unidade) }}</td>
+                    <td data-label="Vendido" class="num">{{ l.vendido|qtd(l.produto.unidade) }}</td>
+                    <td data-label="Perdido" class="num">{{ l.perdido|qtd(l.produto.unidade) }}</td>
+                    <td data-label="Índice de perda" class="num">{{ l.indice_perda|percentual }}</td>
+                    <td data-label="Faturamento" class="num">{{ l.faturamento|moeda }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="hint">Índice de perda = quantidade perdida ÷ (vendida + perdida) no período.</p>
+    {% else %}
+        {{ m.vazio('fa-seedling', 'Nenhuma colheita, venda ou perda no período.') }}
+    {% endif %}
+</section>
+
+<section class="card">
+    <div class="card-header space-between">
+        <div class="header-title"><i class="fa-solid fa-clock-rotate-left"></i><h2>Movimentações recentes</h2></div>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('estoque.index') }}">Ver estoque</a>
+    </div>
+    {% if recentes %}
+    <div class="table-container">
+        <table class="table-cards">
+            <thead><tr><th>Data</th><th>Produto</th><th>Tipo</th><th>Lote</th><th class="num">Quantidade</th></tr></thead>
+            <tbody>
+            {% for mv in recentes %}
+                <tr>
+                    <td data-label="Data">{{ mv.data|data_br }}</td>
+                    <td data-label="Produto">{{ mv.produto.nome }}</td>
+                    <td data-label="Tipo">{{ m.tipo_mov(mv) }}</td>
+                    <td data-label="Lote">{{ mv.colheita.lote }}</td>
+                    <td data-label="Quantidade" class="num {{ 'pos' if mv.quantidade > 0 else 'neg' }}">{{ '+' if mv.quantidade > 0 }}{{ mv.quantidade|qtd(mv.produto.unidade) }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        {{ m.vazio('fa-clock-rotate-left', 'Nenhuma movimentação registrada ainda.') }}
+    {% endif %}
+</section>
+{% endblock %}

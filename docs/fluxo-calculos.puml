@@ -1,0 +1,46 @@
+@startuml
+' Fluxo de cálculos do AgroHorti (substitui Conteiner/conteiner3.html, que não tinha @startuml
+' e tratava "quantidade perdida x preço de venda" como prejuízo e "lucro real").
+title AgroHorti - Estoque, Perdas e Resultado Estimado
+
+start
+
+:Produtor registra movimentações;
+note right
+  **Entradas:** colheitas (cada colheita = um lote)
+  **Saídas:** vendas e perdas/descartes
+  **Estornos:** cancelamento de venda ou de perda
+end note
+
+partition "Estoque (livro-razão de movimentações)" {
+    :Validar quantidade disponível no lote/produto;
+    if (Quantidade > disponível?) then (sim)
+        :Recusar operação\n(nada é gravado);
+        stop
+    else (não)
+        :Gravar registro + movimentações\nna MESMA transação;
+    endif
+    :Saldo = Σ colheitas − Σ vendas − Σ perdas + Σ estornos;
+}
+
+partition "Indicadores do período" {
+    :Faturamento bruto = Σ (qtd vendida × preço praticado);
+    :Faturamento líquido = bruto − descontos;
+    :Custo dos vendidos = Σ (qtd vendida × custo cadastrado);
+    :Perdas a custo = Σ (qtd perdida × custo cadastrado)\n(prejuízo estimado);
+    :Perdas a preço de venda = Σ (qtd perdida × preço)\n(receita não obtida — NÃO é prejuízo);
+    if (Todos os itens têm custo cadastrado?) then (sim)
+        :Resultado estimado =\nlíquido − custo dos vendidos − perdas a custo;
+    else (não)
+        :Exibir "indisponível" e pedir cadastro do custo;
+    endif
+}
+
+:Exibir painel e relatórios;
+note right
+  O resultado estimado não é lucro real:
+  não inclui frete, embalagens, taxas etc.
+end note
+
+stop
+@enduml

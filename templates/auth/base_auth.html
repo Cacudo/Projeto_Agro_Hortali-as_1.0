@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block titulo %}{% endblock %} · AgroHorti</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥬</text></svg>">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="auth-page">
+    <div class="auth-container">
+        <div class="auth-logo" aria-hidden="true">🥬</div>
+        <h1>AgroHorti</h1>
+        <p class="auth-subtitle">{% block subtitulo %}{% endblock %}</p>
+
+        {% with mensagens = get_flashed_messages(with_categories=true) %}
+            {% for categoria, mensagem in mensagens %}
+                <div class="flash flash-{{ categoria }}" role="{{ 'alert' if categoria == 'erro' else 'status' }}"><span>{{ mensagem }}</span></div>
+            {% endfor %}
+        {% endwith %}
+
+        {% block formulario %}{% endblock %}
+
+        <div class="auth-about">
+            <h2>🌱 Sobre o AgroHorti</h2>
+            <p>
+                Sistema de gestão para produtores e feirantes de hortaliças: registre colheitas,
+                vendas e perdas e acompanhe o estoque e o faturamento em um só lugar.
+            </p>
+            <p>
+                Muitas verduras e legumes são desperdiçados mesmo estando em boas condições.
+                Saber onde e por que ocorrem as perdas é o primeiro passo para reduzir o
+                desperdício e aumentar a renda.
+            </p>
+        </div>
+        <div class="auth-footer">AgroHorti © {{ hoje.year }} - Cultivando um futuro melhor 🌿</div>
+    </div>
+</body>
+</html>

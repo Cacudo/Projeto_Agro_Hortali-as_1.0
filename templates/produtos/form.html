@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block titulo %}{{ 'Editar produto' if produto else 'Novo produto' }}{% endblock %}
+{% block conteudo %}
+<header class="page-header">
+    <a class="back-link" href="{{ url_for('produtos.lista') }}"><i class="fa-solid fa-arrow-left"></i> Produtos</a>
+    <h1>{{ 'Editar ' ~ produto.nome if produto else 'Novo produto' }}</h1>
+    <p>Campos marcados com * são obrigatórios.</p>
+</header>
+
+<section class="card">
+    <form method="post">
+        {{ m.csrf() }}
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="nome">Nome *</label>
+                <input type="text" id="nome" name="nome" value="{{ dados.get('nome', '') }}" maxlength="80" required placeholder="Ex.: Alface crespa">
+            </div>
+            <div class="form-group">
+                <label for="categoria">Categoria *</label>
+                <select id="categoria" name="categoria" required>
+                    <option value="">Selecione…</option>
+                    {% for c in CATEGORIAS %}<option {{ 'selected' if c == dados.get('categoria') }}>{{ c }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="unidade">Unidade de medida *</label>
+                <select id="unidade" name="unidade" required {% if tem_historico %}aria-describedby="unidade-ajuda"{% endif %}>
+                    <option value="">Selecione…</option>
+                    {% for chave, (rotulo, _) in UNIDADES.items() %}
+                        <option value="{{ chave }}" {{ 'selected' if chave == dados.get('unidade') }}>{{ rotulo }}</option>
+                    {% endfor %}
+                </select>
+                {% if tem_historico %}<small id="unidade-ajuda" class="hint">Não pode ser alterada: o produto já tem movimentações.</small>{% endif %}
+            </div>
+            <div class="form-group">
+                <label for="preco_venda">Preço de venda (R$ por unidade) *</label>
+                <input type="number" id="preco_venda" name="preco_venda" value="{{ dados.get('preco_venda', '') }}" min="0.01" step="0.01" inputmode="decimal" required>
+            </div>
+            <div class="form-group">
+                <label for="custo_unitario">Custo de produção (R$ por unidade)</label>
+                <input type="number" id="custo_unitario" name="custo_unitario" value="{{ dados.get('custo_unitario', '') }}" min="0" step="0.01" inputmode="decimal" aria-describedby="custo-ajuda">
+                <small id="custo-ajuda" class="hint">Opcional. Necessário para estimar margem e o prejuízo real das perdas.</small>
+            </div>
+            <div class="form-group">
+                <label for="estoque_minimo">Estoque mínimo</label>
+                <input type="number" id="estoque_minimo" name="estoque_minimo" value="{{ dados.get('estoque_minimo', '0') }}" min="0" step="0.001" inputmode="decimal" aria-describedby="minimo-ajuda">
+                <small id="minimo-ajuda" class="hint">Abaixo deste valor o produto aparece nos alertas.</small>
+            </div>
+            <div class="form-group">
+                <label for="validade_dias">Prazo de conservação (dias)</label>
+                <input type="number" id="validade_dias" name="validade_dias" value="{{ dados.get('validade_dias', '') }}" min="1" max="3650" step="1" inputmode="numeric" aria-describedby="validade-ajuda">
+                <small id="validade-ajuda" class="hint">Opcional. Usado para avisar quando um lote colhido estiver perto de estragar.</small>
+            </div>
+            <div class="form-group span-2">
+                <label for="conservacao">Informações de conservação</label>
+                <textarea id="conservacao" name="conservacao" rows="2" maxlength="500" placeholder="Ex.: manter em local fresco e úmido, longe do sol">{{ dados.get('conservacao', '') }}</textarea>
+            </div>
+        </div>
+        <div class="form-actions">
+            <a class="btn btn-ghost" href="{{ url_for('produtos.lista') }}">Cancelar</a>
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

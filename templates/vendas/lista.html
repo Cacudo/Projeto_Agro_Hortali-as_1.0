@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block titulo %}Vendas{% endblock %}
+{% block conteudo %}
+<header class="page-header page-header-row">
+    <div>
+        <h1>Vendas</h1>
+        <p>Vendas registradas. Vendas canceladas continuam no histórico, mas não entram nos totais.</p>
+    </div>
+    <a class="btn btn-primary" href="{{ url_for('vendas.nova') }}"><i class="fa-solid fa-plus"></i> Nova venda</a>
+</header>
+
+<section class="metrics-grid">
+    <div class="metric-card green">
+        <div class="metric-icon"><i class="fa-solid fa-sack-dollar"></i></div>
+        <div class="metric-details"><span>Faturamento líquido</span><h2>{{ financeiro.faturamento_liquido|moeda }}</h2><small>descontos: {{ financeiro.descontos|moeda }}</small></div>
+    </div>
+    <div class="metric-card blue">
+        <div class="metric-icon"><i class="fa-solid fa-receipt"></i></div>
+        <div class="metric-details"><span>Vendas</span><h2>{{ financeiro.numero_vendas }}</h2><small>{% if financeiro.ticket_medio %}média de {{ financeiro.ticket_medio|moeda }}{% else %}no período{% endif %}</small></div>
+    </div>
+</section>
+
+<section class="card">
+    {{ m.filtro_periodo('vendas.lista', inicio, fim, produtos, produto_id) }}
+    {% if vendas %}
+    <div class="table-container">
+        <table class="table-cards">
+            <thead><tr><th>Nº</th><th>Data</th><th>Itens</th><th class="num">Desconto</th><th class="num">Total</th><th>Situação</th><th class="actions">Ações</th></tr></thead>
+            <tbody>
+            {% for v in vendas %}
+                <tr class="{{ 'row-muted' if v.cancelada }}">
+                    <td data-label="Nº" class="id-cell">#{{ v.id }}</td>
+                    <td data-label="Data">{{ v.data_hora|data_br }}</td>
+                    <td data-label="Itens">{% for i in v.itens %}{{ i.produto.nome }} ({{ i.quantidade|qtd(i.produto.unidade) }}){{ ', ' if not loop.last }}{% endfor %}</td>
+                    <td data-label="Desconto" class="num">{{ v.desconto|moeda }}</td>
+                    <td data-label="Total" class="num"><strong>{{ v.total|moeda }}</strong></td>
+                    <td data-label="Situação">{% if v.cancelada %}<span class="tag tag-neutral">Cancelada</span>{% else %}<span class="tag tag-success">Concluída</span>{% endif %}</td>
+                    <td class="actions"><a class="btn btn-ghost btn-sm" href="{{ url_for('vendas.detalhe', venda_id=v.id) }}">Detalhes</a></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        {{ m.vazio('fa-cash-register', 'Nenhuma venda no período selecionado.', url_for('vendas.nova'), 'Registrar venda') }}
+    {% endif %}
+</section>
+{% endblock %}

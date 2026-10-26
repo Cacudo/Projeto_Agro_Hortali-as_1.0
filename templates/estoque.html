@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block titulo %}Estoque{% endblock %}
+{% block conteudo %}
+<header class="page-header">
+    <h1>Estoque</h1>
+    <p>Saldo calculado a partir de todas as colheitas, vendas, perdas e estornos registrados.</p>
+</header>
+
+<section class="metrics-grid">
+    <div class="metric-card green"><div class="metric-icon"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="metric-details"><span>Estoque normal</span><h2>{{ contagem.ok }}</h2></div></div>
+    <div class="metric-card orange"><div class="metric-icon"><i class="fa-solid fa-arrow-trend-down"></i></div>
+        <div class="metric-details"><span>Estoque baixo</span><h2>{{ contagem.baixo }}</h2></div></div>
+    <div class="metric-card red"><div class="metric-icon"><i class="fa-solid fa-box-open"></i></div>
+        <div class="metric-details"><span>Sem estoque</span><h2>{{ contagem.zerado }}</h2></div></div>
+</section>
+
+<section class="card">
+    <div class="card-header"><i class="fa-solid fa-boxes-stacked"></i><h2>Saldo atual por produto</h2></div>
+    {% if situacao %}
+    <div class="table-container">
+        <table class="table-cards">
+            <thead><tr><th>Produto</th><th class="num">Disponível</th><th class="num">Mínimo</th><th>Situação</th><th class="actions">Ações</th></tr></thead>
+            <tbody>
+            {% for l in situacao %}
+                <tr>
+                    <td data-label="Produto"><strong>{{ l.produto.nome }}</strong><div class="sub">{{ l.produto.categoria }}</div></td>
+                    <td data-label="Disponível" class="num"><strong>{{ l.saldo|qtd(l.produto.unidade) }}</strong></td>
+                    <td data-label="Mínimo" class="num">{{ l.produto.estoque_minimo|qtd(l.produto.unidade) }}</td>
+                    <td data-label="Situação">{{ m.status_estoque(l.status) }}</td>
+                    <td class="actions">
+                        <a class="btn-icon" href="{{ url_for('colheitas.nova', produto_id=l.produto.id) }}" title="Registrar colheita" aria-label="Registrar colheita de {{ l.produto.nome }}"><i class="fa-solid fa-basket-shopping"></i></a>
+                        <a class="btn-icon" href="{{ url_for('estoque.index', produto_id=l.produto.id) }}" title="Ver lotes e histórico" aria-label="Ver histórico de {{ l.produto.nome }}"><i class="fa-solid fa-clock-rotate-left"></i></a>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        {{ m.vazio('fa-carrot', 'Nenhum produto ativo cadastrado.', url_for('produtos.novo'), 'Cadastrar produto') }}
+    {% endif %}
+</section>
+
+<section class="card">
+    <div class="card-header"><i class="fa-solid fa-layer-group"></i><h2>Lotes com saldo{% if produto_id %} (produto filtrado){% endif %}</h2></div>
+    {% if lotes %}
+    <div class="table-container">
+        <table class="table-cards">
+            <thead><tr><th>Lote</th><th>Produto</th><th>Colheita</th><th>Validade</th><th class="num">Saldo</th><th class="actions">Ações</th></tr></thead>
+            <tbody>
+            {% for c, saldo in lotes %}
+                {% set alerta = alertas_validade.get(c.id) %}
+                <tr>
+                    <td data-label="Lote"><span class="badge">{{ c.lote }}</span></td>
+                    <td data-label="Produto">{{ c.produto.nome }}</td>
+                    <td data-label="Colheita">{{ c.data|data_br }}</td>
+                    <td data-label="Validade">
+                        {{ c.validade|data_br }}
+                        {% if alerta %}<span class="tag {{ 'tag-danger' if alerta.vencido else 'tag-warning' }}">{{ 'Vencido' if alerta.vencido else 'Vence logo' }}</span>{% endif %}
+                    </td>
+                    <td data-label="Saldo" class="num">{{ saldo|qtd(c.produto.unidade) }}</td>
+                    <td class="actions"><a class="btn-icon" href="{{ url_for('perdas.nova', produto_id=c.produto_id, colheita_id=c.id) }}" title="Registrar perda deste lote" aria-label="Registrar perda do lote {{ c.lote }}"><i class="fa-solid fa-trash-can"></i></a></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        {{ m.vazio('fa-layer-group', 'Nenhum lote com saldo disponível.') }}
+    {% endif %}
+</section>
+
+<section class="card" id="historico">
+    <div class="card-header"><i class="fa-solid fa-clock-rotate-left"></i><h2>Histórico de movimentações</h2></div>
+    {% set extra %}
+    <div class="form-group">
+        <label for="f-tipo">Tipo</label>
+        <select id="f-tipo" name="tipo">
+            <option value="">Todos</option>
+            {% for chave, rotulo in TIPOS_MOVIMENTACAO.items() %}<option value="{{ chave }}" {{ 'selected' if chave == tipo }}>{{ rotulo }}</option>{% endfor %}
+        </select>
+    </div>
+    {% endset %}
+    {{ m.filtro_periodo('estoque.index', inicio, fim, produtos, produto_id, extra) }}
+    {% if historico.items %}
+    <div class="table-container">
+        <table class="table-cards">
+            <thead><tr><th>Data</th><th>Produto</th><th>Tipo</th><th>Lote</th><th class="num">Quantidade</th><th>Origem</th></tr></thead>
+            <tbody>
+            {% for mv in historico.items %}
+                <tr>
+                    <td data-label="Data">{{ mv.data|data_br }}</td>
+                    <td data-label="Produto">{{ mv.produto.nome }}</td>
+                    <td data-label="Tipo">{{ m.tipo_mov(mv) }}</td>
+                    <td data-label="Lote">{{ mv.colheita.lote }}</td>
+                    <td data-label="Quantidade" class="num {{ 'pos' if mv.quantidade > 0 else 'neg' }}">{{ '+' if mv.quantidade > 0 }}{{ mv.quantidade|qtd(mv.produto.unidade) }}</td>
+                    <td data-label="Origem">
+                        {% if mv.venda_item %}<a href="{{ url_for('vendas.detalhe', venda_id=mv.venda_item.venda_id) }}">Venda nº {{ mv.venda_item.venda_id }}</a>
+                        {% elif mv.perda %}{{ mv.perda.motivo_rotulo }}
+                        {% else %}Colheita{% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {{ m.paginacao(historico, 'estoque.index') }}
+    {% else %}
+        {{ m.vazio('fa-clock-rotate-left', 'Nenhuma movimentação encontrada.') }}
+    {% endif %}
+</section>
+{% endblock %}

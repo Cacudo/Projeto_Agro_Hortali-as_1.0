@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block titulo %}Pulverização{% endblock %}
+{% block conteudo %}
+<header class="page-header">
+    <h1>Gestão de Pulverização</h1>
+    <p>Calcule e registre o volume de calda por talhão (volume = área × dosagem).</p>
+</header>
+
+<section class="metrics-grid">
+    <div class="metric-card green">
+        <div class="metric-icon"><i class="fa-solid fa-location-dot"></i></div>
+        <div class="metric-details"><span>Talhões</span><h2>{{ total_talhoes }}</h2></div>
+    </div>
+    <div class="metric-card blue">
+        <div class="metric-icon"><i class="fa-solid fa-vector-square"></i></div>
+        <div class="metric-details"><span>Área total aplicada</span><h2>{{ total_area|qtd }} <small>ha</small></h2></div>
+    </div>
+    <div class="metric-card orange">
+        <div class="metric-icon"><i class="fa-solid fa-flask"></i></div>
+        <div class="metric-details"><span>Volume de calda</span><h2>{{ total_volume|qtd }} <small>L</small></h2></div>
+    </div>
+</section>
+
+<section class="card">
+    <div class="card-header"><i class="fa-solid fa-circle-plus"></i><h2>Nova aplicação</h2></div>
+    <form method="post" data-calda>
+        {{ m.csrf() }}
+        {% include "pulverizacao/_campos.html" %}
+        <div class="form-actions">
+            <span class="calc-preview">Volume previsto: <strong data-calda-resultado>—</strong></span>
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Cadastrar e calcular</button>
+        </div>
+    </form>
+</section>
+
+<section class="card">
+    <div class="card-header space-between">
+        <div class="header-title"><i class="fa-solid fa-list-check"></i><h2>Aplicações registradas</h2></div>
+        <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="search" data-filtro-tabela="#tabela-pulverizacao" placeholder="Buscar talhão ou cultura..." aria-label="Buscar talhão ou cultura">
+        </div>
+    </div>
+    {% if registros %}
+    <div class="table-container">
+        <table class="table-cards" id="tabela-pulverizacao">
+            <thead><tr><th>Data</th><th>Talhão</th><th>Cultura</th><th class="num">Área</th><th class="num">Dosagem</th><th class="num">Volume total</th><th class="actions">Ações</th></tr></thead>
+            <tbody>
+            {% for r in registros %}
+                <tr>
+                    <td data-label="Data">{{ r.data|data_br }}</td>
+                    <td data-label="Talhão"><strong>{{ r.talhao }}</strong>{% if r.observacoes %}<div class="sub">{{ r.observacoes }}</div>{% endif %}</td>
+                    <td data-label="Cultura"><span class="badge">{{ r.cultura }}</span></td>
+                    <td data-label="Área" class="num">{{ r.area_ha|qtd('ha') }}</td>
+                    <td data-label="Dosagem" class="num">{{ r.dosagem_l_ha|qtd('L/ha') }}</td>
+                    <td data-label="Volume total" class="num"><strong class="highlight-val">{{ r.volume_total|qtd('L') }}</strong></td>
+                    <td class="actions">
+                        <a class="btn-icon" href="{{ url_for('pulverizacao.editar', registro_id=r.id) }}" title="Editar" aria-label="Editar registro de {{ r.talhao }}"><i class="fa-solid fa-pen"></i></a>
+                        <form method="post" action="{{ url_for('pulverizacao.excluir', registro_id=r.id) }}" data-confirm="Excluir o registro do talhão {{ r.talhao }}?">
+                            {{ m.csrf() }}<button class="btn-icon danger" title="Excluir" aria-label="Excluir registro de {{ r.talhao }}"><i class="fa-solid fa-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        {{ m.vazio('fa-seedling', 'Nenhuma aplicação registrada até o momento.') }}
+    {% endif %}
+</section>
+{% endblock %}

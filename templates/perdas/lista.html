@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block titulo %}Perdas e descartes{% endblock %}
+{% block conteudo %}
+<header class="page-header page-header-row">
+    <div>
+        <h1>Perdas e descartes</h1>
+        <p>Hortaliças que estragaram ou foram descartadas. Cada perda baixa o estoque.</p>
+    </div>
+    <a class="btn btn-danger" href="{{ url_for('perdas.nova') }}"><i class="fa-solid fa-plus"></i> Registrar perda</a>
+</header>
+
+{% set extra %}
+<div class="form-group">
+    <label for="f-motivo">Motivo</label>
+    <select id="f-motivo" name="motivo">
+        <option value="">Todos</option>
+        {% for chave, rotulo in MOTIVOS_PERDA.items() %}<option value="{{ chave }}" {{ 'selected' if chave == motivo }}>{{ rotulo }}</option>{% endfor %}
+    </select>
+</div>
+{% endset %}
+
+<section class="metrics-grid">
+    <div class="metric-card red">
+        <div class="metric-icon"><i class="fa-solid fa-trash-can"></i></div>
+        <div class="metric-details"><span>Registros de perda</span><h2>{{ financeiro.perdas_registros }}</h2><small>no período</small></div>
+    </div>
+    <div class="metric-card orange">
+        <div class="metric-icon"><i class="fa-solid fa-tag"></i></div>
+        <div class="metric-details">
+            <span>A preço de venda</span><h2>{{ financeiro.perdas_valor_venda|moeda }}</h2>
+            <small>receita que deixou de entrar</small>
+        </div>
+    </div>
+    <div class="metric-card blue">
+        <div class="metric-icon"><i class="fa-solid fa-coins"></i></div>
+        <div class="metric-details">
+            <span>Prejuízo estimado (custo)</span><h2>{{ financeiro.perdas_custo|moeda }}</h2>
+            <small>{% if financeiro.perdas_custo_completo %}com base no custo cadastrado{% else %}parcial: {{ financeiro.perdas_sem_custo }} registro(s) sem custo{% endif %}</small>
+        </div>
+    </div>
+</section>
+
+<section class="card">
+    {{ m.filtro_periodo('perdas.lista', inicio, fim, produtos, produto_id, extra) }}
+
+    {% if motivos %}
+    <h3 class="section-title">Motivos mais frequentes</h3>
+    <ul class="rank-list">
+        {% for g in motivos %}
+            <li><span>{{ g.rotulo }}</span><span>{{ g.ocorrencias }} ocorrência(s) · {{ g.produtos }}</span><strong>{{ g.valor_venda|moeda }}</strong></li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <h3 class="section-title">Registros</h3>
+    {% if perdas %}
+    <div class="table-container">
+        <table class="table-cards">
+            <thead><tr><th>Data</th><th>Produto</th><th class="num">Quantidade</th><th>Motivo</th><th>Lote</th><th class="num">Valor (preço de venda)</th><th class="actions">Ações</th></tr></thead>
+            <tbody>
+            {% for p in perdas %}
+                <tr class="{{ 'row-muted' if p.cancelada }}">
+                    <td data-label="Data">{{ p.data|data_br }}</td>
+                    <td data-label="Produto"><strong>{{ p.produto.nome }}</strong>{% if p.observacoes %}<div class="sub">{{ p.observacoes }}</div>{% endif %}</td>
+                    <td data-label="Quantidade" class="num">{{ p.quantidade|qtd(p.produto.unidade) }}</td>
+                    <td data-label="Motivo"><span class="badge">{{ p.motivo_rotulo }}</span></td>
+                    <td data-label="Lote">{{ p.colheita.lote if p.colheita else 'Automático' }}</td>
+                    <td data-label="Valor" class="num">{{ (p.quantidade * p.preco_unitario)|moeda }}</td>
+                    <td class="actions">
+                        {% if p.cancelada %}
+                            <span class="tag tag-neutral" title="{{ p.motivo_cancelamento }}">Cancelada</span>
+                        {% else %}
+                            {{ m.form_cancelar(url_for('perdas.cancelar', perda_id=p.id), 'Cancelar') }}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        {{ m.vazio('fa-face-smile', 'Nenhuma perda registrada no período.') }}
+    {% endif %}
+</section>
+{% endblock %}

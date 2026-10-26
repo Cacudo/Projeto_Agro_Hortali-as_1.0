@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block titulo %}Registrar perda{% endblock %}
+{% block conteudo %}
+<header class="page-header">
+    <a class="back-link" href="{{ url_for('perdas.lista') }}"><i class="fa-solid fa-arrow-left"></i> Perdas</a>
+    <h1>Registrar perda ou descarte</h1>
+    <p>A quantidade informada é retirada do estoque. Sem lote escolhido, a baixa começa pelo lote mais antigo.</p>
+</header>
+
+{% if not produtos %}
+<section class="card">
+    {{ m.vazio('fa-carrot', 'Cadastre um produto antes de registrar perdas.', url_for('produtos.novo'), 'Cadastrar produto') }}
+</section>
+{% else %}
+<section class="card">
+    <form method="post">
+        {{ m.csrf() }}
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="produto_id">Produto *</label>
+                <select id="produto_id" name="produto_id" required data-unidade-alvo="#unidade-perda" data-filtra-lotes="#colheita_id" data-saldo-alvo="#saldo-perda">
+                    <option value="">Selecione…</option>
+                    {% for p in produtos %}
+                        <option value="{{ p.id }}" data-unidade="{{ p.unidade }}" data-saldo="{{ saldos.get(p.id, 0)|qtd(p.unidade) }}" {{ 'selected' if dados.get('produto_id')|string == p.id|string }}>{{ p.nome }}</option>
+                    {% endfor %}
+                </select>
+                <small class="hint" id="saldo-perda"></small>
+            </div>
+            <div class="form-group">
+                <label for="colheita_id">Lote</label>
+                <select id="colheita_id" name="colheita_id">
+                    <option value="">Automático (mais antigo primeiro)</option>
+                    {% for c, saldo in lotes %}
+                        <option value="{{ c.id }}" data-produto="{{ c.produto_id }}" {{ 'selected' if dados.get('colheita_id')|string == c.id|string }}>
+                            {{ c.lote }} · colhido {{ c.data|data_br }} · {{ saldo|qtd(c.produto.unidade) }}{% if c.validade %} · validade {{ c.validade|data_br }}{% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="quantidade">Quantidade perdida * <span class="unit-label" id="unidade-perda"></span></label>
+                <input type="number" id="quantidade" name="quantidade" value="{{ dados.get('quantidade', '') }}" min="0.001" step="0.001" inputmode="decimal" required>
+            </div>
+            <div class="form-group">
+                <label for="data">Data *</label>
+                <input type="date" id="data" name="data" value="{{ dados.get('data', '') }}" max="{{ hoje.isoformat() }}" required>
+            </div>
+            <div class="form-group">
+                <label for="motivo">Motivo *</label>
+                <select id="motivo" name="motivo" required>
+                    <option value="">Selecione…</option>
+                    {% for chave, rotulo in MOTIVOS_PERDA.items() %}
+                        <option value="{{ chave }}" {{ 'selected' if chave == dados.get('motivo') }}>{{ rotulo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group span-2">
+                <label for="observacoes">Observações <span class="hint-inline">(obrigatórias para “Outros motivos”)</span></label>
+                <textarea id="observacoes" name="observacoes" rows="2" maxlength="500">{{ dados.get('observacoes', '') }}</textarea>
+            </div>
+        </div>
+        <div class="form-actions">
+            <a class="btn btn-ghost" href="{{ url_for('perdas.lista') }}">Cancelar</a>
+            <button type="submit" class="btn btn-danger"><i class="fa-solid fa-check"></i> Registrar perda</button>
+        </div>
+    </form>
+</section>
+{% endif %}
+{% endblock %}

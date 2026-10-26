@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block titulo %}Registrar colheita{% endblock %}
+{% block conteudo %}
+<header class="page-header">
+    <a class="back-link" href="{{ url_for('colheitas.lista') }}"><i class="fa-solid fa-arrow-left"></i> Colheitas</a>
+    <h1>Registrar colheita</h1>
+    <p>A quantidade colhida entra no estoque como um novo lote.</p>
+</header>
+
+{% if not produtos %}
+<section class="card">
+    {{ m.vazio('fa-carrot', 'Cadastre um produto antes de registrar colheitas.', url_for('produtos.novo'), 'Cadastrar produto') }}
+</section>
+{% else %}
+<section class="card">
+    <form method="post">
+        {{ m.csrf() }}
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="produto_id">Produto *</label>
+                <select id="produto_id" name="produto_id" required data-unidade-alvo="#unidade-colheita">
+                    <option value="">Selecione…</option>
+                    {% for p in produtos %}
+                        <option value="{{ p.id }}" data-unidade="{{ p.unidade }}" data-fracionavel="{{ 1 if p.fracionavel else 0 }}" {{ 'selected' if dados.get('produto_id')|string == p.id|string }}>{{ p.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="quantidade">Quantidade colhida * <span class="unit-label" id="unidade-colheita"></span></label>
+                <input type="number" id="quantidade" name="quantidade" value="{{ dados.get('quantidade', '') }}" min="0.001" step="0.001" inputmode="decimal" required>
+            </div>
+            <div class="form-group">
+                <label for="data">Data da colheita *</label>
+                <input type="date" id="data" name="data" value="{{ dados.get('data', '') }}" max="{{ hoje.isoformat() }}" required>
+            </div>
+            <div class="form-group">
+                <label for="lote">Identificação do lote</label>
+                <input type="text" id="lote" name="lote" value="{{ dados.get('lote', '') }}" maxlength="40" placeholder="Gerado automaticamente se vazio">
+            </div>
+            <div class="form-group span-2">
+                <label for="observacoes">Observações</label>
+                <textarea id="observacoes" name="observacoes" rows="2" maxlength="500" placeholder="Ex.: canteiro 3">{{ dados.get('observacoes', '') }}</textarea>
+            </div>
+        </div>
+        <div class="form-actions">
+            <a class="btn btn-ghost" href="{{ url_for('colheitas.lista') }}">Cancelar</a>
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Registrar colheita</button>
+            <button type="submit" name="continuar" value="1" class="btn btn-secondary"><i class="fa-solid fa-plus"></i> Salvar e registrar outra</button>
+        </div>
+    </form>
+</section>
+{% endif %}
+{% endblock %}

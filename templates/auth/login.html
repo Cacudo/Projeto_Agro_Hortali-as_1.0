@@ -1,0 +1,18 @@
+{% extends "auth/base_auth.html" %}
+{% block titulo %}Entrar{% endblock %}
+{% block subtitulo %}Bem-vindo! Entre para continuar.{% endblock %}
+{% block formulario %}
+<form method="post" class="auth-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="campo">
+        <label for="email">E-mail</label>
+        <input type="email" id="email" name="email" value="{{ email }}" placeholder="Digite seu e-mail" autocomplete="username" required autofocus>
+    </div>
+    <div class="campo">
+        <label for="senha">Senha</label>
+        <input type="password" id="senha" name="senha" placeholder="Digite sua senha" autocomplete="current-password" required>
+    </div>
+    <button type="submit" class="botao">Entrar</button>
+</form>
+<p class="auth-note">Não tem acesso? Peça a um usuário já cadastrado para criar sua conta em <strong>Configurações</strong>.</p>
+{% endblock %}

@@ -1,0 +1,26 @@
+<div class="form-grid">
+    <div class="form-group">
+        <label for="talhao">Nome do talhão *</label>
+        <input type="text" id="talhao" name="talhao" value="{{ dados.get('talhao', '') }}" maxlength="80" placeholder="Ex.: Talhão Norte #02" required>
+    </div>
+    <div class="form-group">
+        <label for="cultura">Cultura *</label>
+        <input type="text" id="cultura" name="cultura" value="{{ dados.get('cultura', '') }}" maxlength="80" placeholder="Ex.: Alface, Couve" required>
+    </div>
+    <div class="form-group">
+        <label for="area_ha">Área (ha) *</label>
+        <input type="number" id="area_ha" name="area_ha" value="{{ dados.get('area_ha', '') }}" min="0.01" step="0.01" inputmode="decimal" required data-calda-area>
+    </div>
+    <div class="form-group">
+        <label for="dosagem_l_ha">Dosagem (L/ha) *</label>
+        <input type="number" id="dosagem_l_ha" name="dosagem_l_ha" value="{{ dados.get('dosagem_l_ha', '') }}" min="0.01" step="0.01" inputmode="decimal" required data-calda-dosagem>
+    </div>
+    <div class="form-group">
+        <label for="data">Data da aplicação *</label>
+        <input type="date" id="data" name="data" value="{{ dados.get('data', '') }}" max="{{ hoje.isoformat() }}" required>
+    </div>
+    <div class="form-group">
+        <label for="observacoes">Observações</label>
+        <input type="text" id="observacoes" name="observacoes" value="{{ dados.get('observacoes', '') }}" maxlength="500" placeholder="Ex.: produto aplicado">
+    </div>
+</div>

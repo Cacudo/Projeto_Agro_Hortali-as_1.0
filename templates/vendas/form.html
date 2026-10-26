@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block titulo %}Nova venda{% endblock %}
+{% block conteudo %}
+<header class="page-header">
+    <a class="back-link" href="{{ url_for('vendas.lista') }}"><i class="fa-solid fa-arrow-left"></i> Vendas</a>
+    <h1>Nova venda</h1>
+    <p>O estoque é conferido e baixado ao confirmar. Os valores finais são calculados pelo sistema.</p>
+</header>
+
+{% if not produtos %}
+<section class="card">
+    {{ m.vazio('fa-carrot', 'Cadastre um produto antes de registrar vendas.', url_for('produtos.novo'), 'Cadastrar produto') }}
+</section>
+{% else %}
+<form method="post" id="form-venda">
+    {{ m.csrf() }}
+    <section class="card">
+        <div class="card-header"><i class="fa-solid fa-list"></i><h2>Itens</h2></div>
+        <div id="itens-venda" class="sale-items">
+            {% for pid, qtd_item, preco in linhas %}
+            <div class="sale-item" data-item>
+                <div class="form-group">
+                    <label>Produto</label>
+                    <select name="produto_id" data-produto-venda>
+                        <option value="">Selecione…</option>
+                        {% for p in produtos %}
+                            <option value="{{ p.id }}" data-preco="{{ p.preco_venda }}" data-unidade="{{ p.unidade }}" data-saldo="{{ saldos.get(p.id, 0) }}" {{ 'selected' if pid|string == p.id|string }} {{ 'disabled' if saldos.get(p.id, 0) <= 0 and pid|string != p.id|string }}>
+                                {{ p.nome }} — {{ saldos.get(p.id, 0)|qtd(p.unidade) }} disponível
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Quantidade <span class="unit-label" data-unidade-item></span></label>
+                    <input type="number" name="quantidade" value="{{ qtd_item }}" min="0.001" step="0.001" inputmode="decimal">
+                </div>
+                <div class="form-group">
+                    <label>Preço unitário (R$)</label>
+                    <input type="number" name="preco_unitario" value="{{ preco }}" min="0.01" step="0.01" inputmode="decimal">
+                </div>
+                <div class="sale-item-total">
+                    <span>Subtotal</span><strong data-subtotal>R$ 0,00</strong>
+                </div>
+                <button type="button" class="btn-icon danger" data-remover-item title="Remover item" aria-label="Remover item"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            {% endfor %}
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="adicionar-item"><i class="fa-solid fa-plus"></i> Adicionar produto</button>
+    </section>
+
+    <section class="card">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="data_hora">Data e hora *</label>
+                <input type="datetime-local" id="data_hora" name="data_hora" value="{{ dados.get('data_hora', '') }}" required>
+            </div>
+            <div class="form-group">
+                <label for="desconto">Desconto (R$)</label>
+                <input type="number" id="desconto" name="desconto" value="{{ dados.get('desconto', '0') }}" min="0" step="0.01" inputmode="decimal">
+            </div>
+            <div class="form-group span-2">
+                <label for="observacoes">Observações</label>
+                <textarea id="observacoes" name="observacoes" rows="2" maxlength="500" placeholder="Ex.: feira de sábado">{{ dados.get('observacoes', '') }}</textarea>
+            </div>
+        </div>
+        <div class="sale-summary">
+            <div><span>Subtotal</span><strong id="resumo-subtotal">R$ 0,00</strong></div>
+            <div><span>Desconto</span><strong id="resumo-desconto">R$ 0,00</strong></div>
+            <div class="sale-total"><span>Total</span><strong id="resumo-total">R$ 0,00</strong></div>
+        </div>
+        <p class="hint">Prévia calculada no navegador. O valor oficial é recalculado pelo servidor ao confirmar.</p>
+        <div class="form-actions">
+            <a class="btn btn-ghost" href="{{ url_for('vendas.lista') }}">Cancelar</a>
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Confirmar venda</button>
+        </div>
+    </section>
+</form>
+{% endif %}
+{% endblock %}

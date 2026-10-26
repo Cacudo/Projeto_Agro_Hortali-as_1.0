@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f2a1d">
+    <title>{% block titulo %}AgroHorti{% endblock %} · AgroHorti</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥬</text></svg>">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+{% set secao = request.blueprint %}
+{% set menu = [
+    ('painel', 'painel.index', 'fa-chart-pie', 'Painel'),
+    ('vendas', 'vendas.lista', 'fa-cash-register', 'Vendas'),
+    ('colheitas', 'colheitas.lista', 'fa-basket-shopping', 'Colheitas'),
+    ('perdas', 'perdas.lista', 'fa-trash-can', 'Perdas e descartes'),
+    ('estoque', 'estoque.index', 'fa-boxes-stacked', 'Estoque'),
+    ('produtos', 'produtos.lista', 'fa-carrot', 'Produtos'),
+    ('relatorios', 'relatorios.index', 'fa-chart-line', 'Relatórios'),
+    ('pulverizacao', 'pulverizacao.index', 'fa-droplet', 'Pulverização'),
+    ('configuracoes', 'configuracoes.index', 'fa-gear', 'Configurações'),
+] %}
+<div class="app-layout">
+    <header class="topbar">
+        <button type="button" class="menu-toggle" data-menu-toggle aria-controls="sidebar" aria-expanded="false" aria-label="Abrir menu">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+        <a class="brand brand-compact" href="{{ url_for('painel.index') }}">
+            <span class="brand-icon"><i class="fa-solid fa-leaf"></i></span> AgroHorti
+        </a>
+    </header>
+
+    <aside class="sidebar" id="sidebar">
+        <a class="brand" href="{{ url_for('painel.index') }}">
+            <span class="brand-icon"><i class="fa-solid fa-leaf"></i></span>
+            <span>AgroHorti</span>
+        </a>
+        <nav class="sidebar-nav" aria-label="Menu principal">
+            {% for chave, endpoint, icone, rotulo in menu %}
+                <a href="{{ url_for(endpoint) }}" class="{{ 'active' if secao == chave }}" {% if secao == chave %}aria-current="page"{% endif %}>
+                    <i class="fa-solid {{ icone }}"></i> {{ rotulo }}
+                </a>
+            {% endfor %}
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-status">
+                <span class="status-dot"></span>
+                <span class="user-name" title="{{ g.usuario.email }}">{{ g.usuario.nome }}</span>
+            </div>
+            <form action="{{ url_for('auth.logout') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn-link-light"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
+            </form>
+        </div>
+    </aside>
+    <div class="sidebar-backdrop" data-menu-close></div>
+
+    <main class="main-content">
+        {% with mensagens = get_flashed_messages(with_categories=true) %}
+            {% if mensagens %}
+                <div class="flashes">
+                    {% for categoria, mensagem in mensagens %}
+                        <div class="flash flash-{{ categoria }}" role="{{ 'alert' if categoria == 'erro' else 'status' }}">
+                            <i class="fa-solid {{ 'fa-circle-exclamation' if categoria == 'erro' else 'fa-circle-check' }}"></i>
+                            <span>{{ mensagem }}</span>
+                            <button type="button" class="flash-close" data-dismiss aria-label="Fechar mensagem">&times;</button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block conteudo %}{% endblock %}
+    </main>
+</div>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

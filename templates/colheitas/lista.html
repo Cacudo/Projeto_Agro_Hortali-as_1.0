@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block titulo %}Colheitas{% endblock %}
+{% block conteudo %}
+<header class="page-header page-header-row">
+    <div>
+        <h1>Colheitas</h1>
+        <p>Cada colheita forma um lote e entra automaticamente no estoque.</p>
+    </div>
+    <a class="btn btn-primary" href="{{ url_for('colheitas.nova') }}"><i class="fa-solid fa-plus"></i> Registrar colheita</a>
+</header>
+
+<section class="card">
+    {{ m.filtro_periodo('colheitas.lista', inicio, fim, produtos, produto_id) }}
+    {% if pagina.items %}
+    <div class="table-container">
+        <table class="table-cards">
+            <thead><tr><th>Data</th><th>Produto</th><th>Lote</th><th class="num">Colhido</th><th class="num">Saldo do lote</th><th>Validade</th><th class="actions">Ações</th></tr></thead>
+            <tbody>
+            {% for c in pagina.items %}
+                {% set saldo = saldos.get(c.id, 0) %}
+                <tr>
+                    <td data-label="Data">{{ c.data|data_br }}</td>
+                    <td data-label="Produto"><strong>{{ c.produto.nome }}</strong>{% if c.observacoes %}<div class="sub">{{ c.observacoes }}</div>{% endif %}</td>
+                    <td data-label="Lote"><span class="badge">{{ c.lote }}</span></td>
+                    <td data-label="Colhido" class="num">{{ c.quantidade|qtd(c.produto.unidade) }}</td>
+                    <td data-label="Saldo do lote" class="num">{{ saldo|qtd(c.produto.unidade) }}</td>
+                    <td data-label="Validade">
+                        {% if c.validade %}
+                            {{ c.validade|data_br }}
+                            {% if saldo > 0 and c.validade < hoje %}<span class="tag tag-danger">Vencido</span>{% endif %}
+                        {% else %}—{% endif %}
+                    </td>
+                    <td class="actions">
+                        {% if saldo > 0 %}
+                        <a class="btn-icon" href="{{ url_for('perdas.nova', produto_id=c.produto_id, colheita_id=c.id) }}" title="Registrar perda deste lote" aria-label="Registrar perda do lote {{ c.lote }}"><i class="fa-solid fa-trash-can"></i></a>
+                        {% endif %}
+                        <form method="post" action="{{ url_for('colheitas.excluir', colheita_id=c.id) }}" data-confirm="Excluir a colheita do lote {{ c.lote }}? Use apenas para corrigir lançamentos errados. Só é possível se o lote ainda não teve vendas nem perdas.">
+                            {{ m.csrf() }}<button class="btn-icon danger" title="Excluir lançamento" aria-label="Excluir colheita do lote {{ c.lote }}"><i class="fa-solid fa-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {{ m.paginacao(pagina, 'colheitas.lista') }}
+    {% else %}
+        {{ m.vazio('fa-basket-shopping', 'Nenhuma colheita no período selecionado.', url_for('colheitas.nova'), 'Registrar colheita') }}
+    {% endif %}
+</section>
+{% endblock %}

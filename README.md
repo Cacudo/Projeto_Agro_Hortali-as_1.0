@@ -1,105 +1,149 @@
 # 🥬 AgroHorti — Gestão de Hortaliças
 
-Aplicação web em Flask para produtores rurais, agricultores familiares e feirantes controlarem
-o que foi **colhido**, o que está no **estoque**, o que foi **vendido**, o que **estragou** e qual
-foi o **resultado financeiro** das vendas.
+Sistema web para produtores rurais, agricultores familiares e feirantes controlarem
+**colheitas, estoque, perdas e vendas** de hortaliças, que são produtos perecíveis.
 
-## 📌 Funcionalidades
+Ele responde a perguntas como: quanto foi colhido, quanto há em estoque, quanto foi vendido,
+quanto estragou e por quê, quais produtos têm mais desperdício, quanto foi faturado e
+quais produtos precisam de atenção.
 
-* **Contas de usuário:** cadastro, login e troca de senha. Cada produtor vê apenas os próprios dados.
-* **Produtos:** cadastro de hortaliças com unidade (kg, maço, unidade, caixa, dúzia, bandeja), preço de venda,
-  validade após a colheita e estoque mínimo. Produtos com histórico são desativados em vez de apagados.
-* **Colheitas:** cada colheita registrada entra no estoque.
-* **Vendas:** baixa o estoque e calcula o valor no servidor (preço do cadastro ou preço informado na venda).
-* **Perdas e descartes:** baixa o estoque, exige o motivo e calcula o prejuízo estimado.
-* **Estoque:** saldo por produto, valor estimado e idade da colheita mais antiga ainda em estoque,
-  com alertas de validade e de estoque baixo.
-* **Cancelamentos:** qualquer registro pode ser cancelado com motivo. Ele continua no histórico,
-  mas deixa de contar no estoque e nos totais.
-* **Visão geral:** receita, prejuízo e resultado do mês, valor em estoque, alertas e vendas dos últimos 7 dias.
-* **Histórico:** todas as movimentações com filtros por tipo, produto, período e situação.
-* **Relatórios:** produção, vendas, perdas e resultado por produto em qualquer período, além das perdas por motivo.
-* **Exportação CSV** do histórico e dos relatórios (abre direto no Excel/LibreOffice).
+## Funcionalidades
 
-## 🧮 Regras de negócio
+| Módulo | O que faz |
+|---|---|
+| **Login** | Autenticação real com senha criptografada (hash), sessão segura e proteção CSRF. No primeiro acesso, o sistema pede a criação do usuário administrador. |
+| **Produtos** | Cadastro com categoria, unidade, preço, custo (opcional), estoque mínimo e prazo de conservação. Tem busca, filtro, edição, desativação e exclusão (esta só para produtos sem histórico). Impede nomes duplicados. |
+| **Colheitas** | Cada colheita forma um **lote** e entra automaticamente no estoque. A validade do lote é calculada pelo prazo de conservação. |
+| **Estoque** | Saldo por produto e por lote, alertas de estoque baixo/zerado e de lotes vencendo, e histórico completo de movimentações. |
+| **Perdas e descartes** | Registro com motivo e lote opcional. A baixa nunca ultrapassa o disponível. Mostra o total por motivo e por produto, os valores a preço de venda e o prejuízo estimado a custo. |
+| **Vendas** | Venda com vários itens e desconto. Os valores são recalculados no servidor e o estoque é baixado do lote mais antigo. O cancelamento devolve as quantidades ao estoque e mantém o histórico. |
+| **Painel** | Indicadores reais do período (7/30/90 dias), alertas, gráfico de faturamento diário, mais vendidos, maiores perdas e movimentações recentes. |
+| **Relatórios** | Resumo financeiro, dados por produto, rankings e motivos de descarte, com filtros de período e produto e **exportação CSV** (abre corretamente no Excel em português). |
+| **Pulverização** | Módulo herdado da versão anterior: volume de calda = área × dosagem, agora salvo no banco e com edição. |
+| **Configurações** | Troca de senha, criação de usuários e ativação/desativação de acessos. |
 
-Seguem o fluxograma em [`Conteiner/conteiner3.html`](Conteiner/conteiner3.html) (PlantUML):
+### Como os números são calculados
 
-```
-Estoque   = Colhido − (Vendido + Perdido)
-Prejuízo  = Quantidade perdida × Preço de venda do produto (fixado no momento do registro)
-Resultado = Receita das vendas − Prejuízo
-```
+- **Estoque**: não fica guardado em nenhum campo. É sempre a soma das movimentações
+  (colheitas − vendas − perdas + estornos), então existe uma única fonte de verdade.
+- **Faturamento bruto** = soma de quantidade × preço praticado. **Líquido** = bruto − descontos.
+- **Custo estimado dos vendidos** e **perdas a custo** usam o custo de produção que estava
+  cadastrado no momento da venda ou da perda.
+- **Perdas a preço de venda** = receita que deixou de entrar. **Não** é o prejuízo real.
+- **Resultado estimado** = faturamento líquido − custo dos vendidos − perdas a custo.
+  Só aparece quando todos os itens do período têm custo cadastrado. **Não é o lucro real**:
+  não inclui frete, embalagens, taxas da feira e outras despesas.
+- **Índice de perda** = perdido ÷ (vendido + perdido) no período.
 
-* Não é possível vender nem registrar perda maior que o estoque disponível.
-* Não é possível cancelar uma colheita que já saiu do estoque (cancele antes as vendas/perdas correspondentes).
-* Todos os cálculos são feitos no backend. Valores em dinheiro são guardados em centavos.
-* Unidades diferentes de kg aceitam apenas quantidades inteiras.
+## Tecnologias
 
-## 🛠️ Tecnologias
+- Python 3.10+ (testado com Python 3.14), Flask 3.1, Flask-SQLAlchemy 3.1 e SQLAlchemy 2.1
+- Banco **SQLite** (arquivo `instance/agrohorti.db`, criado automaticamente)
+- HTML + Jinja2, CSS próprio e JavaScript puro (sem frameworks)
 
-* **Backend:** Python 3 / Flask
-* **Banco de dados:** SQLite (biblioteca padrão do Python), em `instance/agrohorti.db`
-* **Frontend:** HTML5, CSS3, Jinja2 e um pouco de JavaScript puro
-* **Hospedagem:** PythonAnywhere
+## Instalação e execução no Windows (VS Code)
 
-## ▶️ Como executar
+1. **Instale o Python** pelo site https://www.python.org/downloads/ e marque
+   *"Add python.exe to PATH"* durante a instalação.
+2. **Abra a pasta do projeto no VS Code** (*File › Open Folder…*), na pasta onde está o `app.py`.
+3. **Abra o terminal** (*Terminal › New Terminal*) e crie o ambiente virtual:
+   ```powershell
+   python -m venv .venv
+   ```
+4. **Ative o ambiente virtual**:
+   ```powershell
+   .\.venv\Scripts\Activate.ps1
+   ```
+   Se aparecer um erro de *execução de scripts desabilitada*, rode uma vez
+   `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` e tente novamente.
+   No *Prompt de Comando* (cmd), use `.venv\Scripts\activate.bat`.
+5. **Instale as dependências**:
+   ```powershell
+   pip install -r requirements.txt
+   ```
+6. **Execute o sistema**:
+   ```powershell
+   python app.py
+   ```
+7. **Acesse** http://127.0.0.1:5000 no navegador. No primeiro acesso, crie o usuário administrador.
 
-```bash
-python -m venv .venv
-# Windows
-.venv\Scripts\activate
-# Linux/macOS
-source .venv/bin/activate
+O banco de dados e a chave secreta são criados automaticamente na pasta `instance/`.
+Não é preciso nenhum comando extra para inicializar o banco.
 
-pip install -r requirements.txt
+> Dica: no VS Code, selecione o interpretador do `.venv` com *Ctrl+Shift+P › Python: Select Interpreter*.
+
+### Usar no celular (mesma rede Wi-Fi)
+
+```powershell
+$env:AGROHORTI_HOST = "0.0.0.0"
 python app.py
 ```
-
-Acesse http://127.0.0.1:5000, crie sua conta e cadastre seus produtos.
-O banco de dados e a chave secreta são criados automaticamente na pasta `instance/` (que não vai para o Git).
+No celular, acesse `http://IP-DO-COMPUTADOR:5000` (veja o IP com `ipconfig`). O Firewall do
+Windows pode pedir permissão. Use essa opção apenas em redes confiáveis: o servidor de
+desenvolvimento não usa HTTPS.
 
 ### Variáveis de ambiente (opcionais)
 
-| Variável | Uso |
-|---|---|
-| `AGROHORTI_SECRET_KEY` | Chave secreta das sessões. Se não for definida, uma chave é gerada em `instance/secret_key`. |
-| `AGROHORTI_DATABASE` | Caminho do arquivo SQLite (padrão: `instance/agrohorti.db`). |
-| `AGROHORTI_HTTPS` | Use `1` em produção com HTTPS para enviar o cookie de sessão somente por conexão segura. |
-| `FLASK_DEBUG` | Use `1` apenas em desenvolvimento. |
+| Variável | Para quê | Padrão |
+|---|---|---|
+| `AGROHORTI_SECRET_KEY` | Chave de sessão. Recomendada em servidor público. | Gerada e salva em `instance/secret_key` |
+| `AGROHORTI_DATABASE_URL` | Outro banco/arquivo (URL do SQLAlchemy) | `sqlite:///instance/agrohorti.db` |
+| `AGROHORTI_HOST` / `AGROHORTI_PORT` | Endereço e porta do servidor local | `127.0.0.1` / `5000` |
+| `FLASK_DEBUG` | `1` ativa o modo de depuração (só para desenvolvimento) | desativado |
 
-### PythonAnywhere
+No PowerShell: `$env:AGROHORTI_SECRET_KEY = "uma-frase-longa-e-aleatoria"`.
 
-No arquivo WSGI do PythonAnywhere:
+### Publicação no PythonAnywhere
 
+No arquivo WSGI do PythonAnywhere, aponte para a pasta do projeto e use:
 ```python
-import os, sys
-sys.path.insert(0, '/home/SEU_USUARIO/projeto-software-agro-hortalicas')
-os.environ['AGROHORTI_HTTPS'] = '1'
 from app import app as application
 ```
+Instale as dependências com `pip install -r requirements.txt` no virtualenv do site e defina
+`AGROHORTI_SECRET_KEY` no arquivo WSGI (`os.environ[...]`) antes do import.
 
-## ✅ Testes
+## Testes automatizados
 
-```bash
+```powershell
 python -m unittest discover -s tests -v
 ```
+São 38 testes, cobrindo login, CSRF, produtos, colheitas, estoque por lote, vendas
+(incluindo atomicidade e cancelamento), perdas, cálculos financeiros, CSV, persistência
+após reinício e pulverização. Os testes usam bancos temporários e não tocam no banco real.
 
-## 📁 Estrutura
+## Estrutura
 
 ```
-app.py          # criação da aplicação, CSRF, cabeçalhos de segurança, filtros e páginas de erro
-auth.py         # cadastro, login, logout e troca de senha
-views.py        # páginas e exportação CSV
-regras.py       # regras de negócio: estoque, movimentações, cancelamentos e relatórios
-database.py     # conexão e criação das tabelas SQLite
-templates/      # páginas (base.html é o layout com o menu lateral)
-static/         # style.css
-tests/          # testes automatizados
-Conteiner/      # fluxograma das regras de cálculo (PlantUML)
+app.py                  Ponto de entrada (python app.py / WSGI)
+agrohorti/
+  __init__.py           Criação da aplicação, configuração, CSRF, filtros
+  models.py             Tabelas do banco
+  services.py           Regras que alteram o estoque (colheita, venda, perda, estornos)
+  consultas.py          Consultas do painel, estoque e relatórios
+  utils.py              Validação de entradas e formatação brasileira
+  rotas/                Páginas de cada módulo (auth, produtos, vendas, ...)
+templates/              Páginas HTML (Jinja2)
+static/                 style.css e app.js
+tests/                  Testes automatizados
+docs/                   Pitch deck e fluxograma dos cálculos
+instance/               Banco de dados e chave secreta (criados ao executar; não versionar)
 ```
 
-## 🔗 Links do Projeto
+## Backup dos dados
 
-* **Repositório GitHub:** https://github.com/Cacudo/projeto-software-agro-hortalicas
-* **Aplicação Online:** https://Endrew157.pythonanywhere.com
+Todos os dados ficam em `instance/agrohorti.db`. Para fazer backup, feche o sistema e copie
+esse arquivo. Não apague a pasta `instance/`.
+
+## Limitações conhecidas
+
+- Os dados são compartilhados por todos os usuários (uma propriedade por instalação) e não há níveis de permissão.
+- Não há limite de tentativas de login. Em servidor público, use senhas fortes.
+- Ícones e fonte vêm de CDN (Font Awesome e Google Fonts). Sem internet, o sistema funciona, mas os ícones não aparecem.
+- Mudanças futuras na estrutura do banco exigirão uma ferramenta de migração (ex.: Flask-Migrate). Hoje o sistema só cria tabelas que não existem.
+- O servidor `python app.py` é para uso local. Em produção, use um servidor WSGI (ex.: PythonAnywhere).
+
+## Links
+
+- Repositório: https://github.com/Cacudo/Projeto_Agro_Hortali-as_1.0
+- Repositório anterior: https://github.com/Cacudo/projeto-software-agro-hortalicas
+- Versão online anterior: https://Endrew157.pythonanywhere.com

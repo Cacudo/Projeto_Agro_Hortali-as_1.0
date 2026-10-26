@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block titulo %}Produtos{% endblock %}
+{% block conteudo %}
+<header class="page-header page-header-row">
+    <div>
+        <h1>Produtos</h1>
+        <p>Hortaliças cadastradas, preços, custos e estoque mínimo.</p>
+    </div>
+    <a class="btn btn-primary" href="{{ url_for('produtos.novo') }}"><i class="fa-solid fa-plus"></i> Novo produto</a>
+</header>
+
+<section class="card">
+    <form class="filter-bar" method="get">
+        <div class="form-group grow">
+            <label for="q">Buscar por nome</label>
+            <input type="search" id="q" name="q" value="{{ busca }}" placeholder="Ex.: alface">
+        </div>
+        <div class="form-group">
+            <label for="categoria">Categoria</label>
+            <select id="categoria" name="categoria">
+                <option value="">Todas</option>
+                {% for c in CATEGORIAS %}<option {{ 'selected' if c == categoria }}>{{ c }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="situacao">Situação</label>
+            <select id="situacao" name="situacao">
+                <option value="ativos" {{ 'selected' if situacao == 'ativos' }}>Ativos</option>
+                <option value="inativos" {{ 'selected' if situacao == 'inativos' }}>Desativados</option>
+                <option value="todos" {{ 'selected' if situacao == 'todos' }}>Todos</option>
+            </select>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass"></i> Buscar</button>
+            <a class="btn btn-ghost" href="{{ url_for('produtos.lista') }}">Limpar</a>
+        </div>
+    </form>
+
+    {% if produtos %}
+    <div class="table-container">
+        <table class="table-cards">
+            <thead>
+                <tr><th>Produto</th><th>Categoria</th><th class="num">Preço</th><th class="num">Custo</th><th class="num">Estoque</th><th>Situação</th><th class="actions">Ações</th></tr>
+            </thead>
+            <tbody>
+            {% for p in produtos %}
+                {% set saldo = saldos.get(p.id, 0) %}
+                <tr class="{{ 'row-muted' if not p.ativo }}">
+                    <td data-label="Produto">
+                        <strong>{{ p.nome }}</strong>
+                        {% if p.validade_dias %}<div class="sub">Conserva ~{{ p.validade_dias }} dia(s)</div>{% endif %}
+                    </td>
+                    <td data-label="Categoria"><span class="badge">{{ p.categoria }}</span></td>
+                    <td data-label="Preço" class="num">{{ p.preco_venda|moeda }}/{{ p.unidade }}</td>
+                    <td data-label="Custo" class="num">{{ p.custo_unitario|moeda if p.custo_unitario is not none else '—' }}</td>
+                    <td data-label="Estoque" class="num">{{ saldo|qtd(p.unidade) }}</td>
+                    <td data-label="Situação">
+                        {% if not p.ativo %}<span class="tag tag-neutral">Desativado</span>
+                        {% elif saldo <= 0 %}<span class="tag tag-danger">Sem estoque</span>
+                        {% elif p.estoque_minimo and saldo <= p.estoque_minimo %}<span class="tag tag-warning">Estoque baixo</span>
+                        {% else %}<span class="tag tag-success">Normal</span>{% endif %}
+                    </td>
+                    <td class="actions">
+                        <a class="btn-icon" href="{{ url_for('produtos.editar', produto_id=p.id) }}" title="Editar" aria-label="Editar {{ p.nome }}"><i class="fa-solid fa-pen"></i></a>
+                        {% if p.ativo %}
+                            <a class="btn-icon" href="{{ url_for('colheitas.nova', produto_id=p.id) }}" title="Registrar colheita" aria-label="Registrar colheita de {{ p.nome }}"><i class="fa-solid fa-basket-shopping"></i></a>
+                            <form method="post" action="{{ url_for('produtos.desativar', produto_id=p.id) }}" data-confirm="Desativar “{{ p.nome }}”? Ele sai das listas de venda e colheita, mas o histórico é mantido.">
+                                {{ m.csrf() }}<button class="btn-icon" title="Desativar" aria-label="Desativar {{ p.nome }}"><i class="fa-solid fa-eye-slash"></i></button>
+                            </form>
+                        {% else %}
+                            <form method="post" action="{{ url_for('produtos.reativar', produto_id=p.id) }}">
+                                {{ m.csrf() }}<button class="btn-icon" title="Reativar" aria-label="Reativar {{ p.nome }}"><i class="fa-solid fa-rotate-left"></i></button>
+                            </form>
+                        {% endif %}
+                        <form method="post" action="{{ url_for('produtos.excluir', produto_id=p.id) }}" data-confirm="Excluir “{{ p.nome }}” definitivamente? Só é possível se o produto nunca teve movimentações.">
+                            {{ m.csrf() }}<button class="btn-icon danger" title="Excluir" aria-label="Excluir {{ p.nome }}"><i class="fa-solid fa-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% elif busca or categoria or situacao != 'ativos' %}
+        {{ m.vazio('fa-magnifying-glass', 'Nenhum produto encontrado com esses filtros.') }}
+    {% else %}
+        {{ m.vazio('fa-carrot', 'Nenhum produto cadastrado ainda.', url_for('produtos.novo'), 'Cadastrar produto') }}
+    {% endif %}
+</section>
+{% endblock %}

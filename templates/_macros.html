@@ -1,0 +1,80 @@
+{% macro csrf() %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endmacro %}
+
+{# Filtro de período/produto usado em listas e relatórios. #}
+{% macro filtro_periodo(endpoint, inicio, fim, produtos=None, produto_id=None, extra=None) %}
+<form class="filter-bar" method="get" action="{{ url_for(endpoint) }}">
+    <div class="form-group">
+        <label for="f-inicio">De</label>
+        <input type="date" id="f-inicio" name="inicio" value="{{ inicio.isoformat() if inicio else '' }}">
+    </div>
+    <div class="form-group">
+        <label for="f-fim">Até</label>
+        <input type="date" id="f-fim" name="fim" value="{{ fim.isoformat() if fim else '' }}">
+    </div>
+    {% if produtos is not none %}
+    <div class="form-group">
+        <label for="f-produto">Produto</label>
+        <select id="f-produto" name="produto_id">
+            <option value="">Todos</option>
+            {% for p in produtos %}
+                <option value="{{ p.id }}" {{ 'selected' if p.id == produto_id }}>{{ p.nome }}{{ ' (inativo)' if not p.ativo }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    {% endif %}
+    {{ extra if extra }}
+    <div class="filter-actions">
+        <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-filter"></i> Filtrar</button>
+        <a class="btn btn-ghost" href="{{ url_for(endpoint) }}">Limpar</a>
+    </div>
+</form>
+{% endmacro %}
+
+{% macro paginacao(pagina, endpoint) %}
+{% if pagina.pages > 1 %}
+<nav class="pagination" aria-label="Paginação">
+    {% set args = request.args.to_dict() %}
+    {% if pagina.has_prev %}
+        {% set _ = args.update({'page': pagina.prev_num}) %}
+        <a class="btn btn-ghost btn-sm" href="{{ url_for(endpoint, **args) }}"><i class="fa-solid fa-chevron-left"></i> Anterior</a>
+    {% endif %}
+    <span>Página {{ pagina.page }} de {{ pagina.pages }} · {{ pagina.total }} registros</span>
+    {% if pagina.has_next %}
+        {% set _ = args.update({'page': pagina.next_num}) %}
+        <a class="btn btn-ghost btn-sm" href="{{ url_for(endpoint, **args) }}">Próxima <i class="fa-solid fa-chevron-right"></i></a>
+    {% endif %}
+</nav>
+{% endif %}
+{% endmacro %}
+
+{% macro vazio(icone, texto, link=None, rotulo=None) %}
+<div class="empty-state">
+    <i class="fa-solid {{ icone }}"></i>
+    <p>{{ texto }}</p>
+    {% if link %}<a class="btn btn-primary btn-sm" href="{{ link }}">{{ rotulo }}</a>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro status_estoque(status) %}
+{% if status == 'zerado' %}<span class="tag tag-danger">Sem estoque</span>
+{% elif status == 'baixo' %}<span class="tag tag-warning">Estoque baixo</span>
+{% else %}<span class="tag tag-success">Normal</span>{% endif %}
+{% endmacro %}
+
+{% macro tipo_mov(m) %}
+<span class="tag {{ 'tag-success' if m.quantidade > 0 else 'tag-neutral' }}">{{ m.tipo_rotulo }}</span>
+{% endmacro %}
+
+{# Formulário de cancelamento com motivo obrigatório (vendas e perdas). #}
+{% macro form_cancelar(acao, titulo) %}
+<details class="cancel-box">
+    <summary class="btn btn-danger-outline btn-sm"><i class="fa-solid fa-ban"></i> {{ titulo }}</summary>
+    <form action="{{ acao }}" method="post" class="cancel-form" data-confirm="Confirmar o cancelamento? As quantidades voltarão ao estoque. O registro continuará no histórico como cancelado.">
+        {{ csrf() }}
+        <label>Motivo do cancelamento
+            <input type="text" name="motivo_cancelamento" required maxlength="300" placeholder="Ex.: lançado em duplicidade">
+        </label>
+        <button type="submit" class="btn btn-danger btn-sm">Confirmar cancelamento</button>
+    </form>
+</details>
+{% endmacro %}

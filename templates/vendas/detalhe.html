@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block titulo %}Venda nº {{ venda.id }}{% endblock %}
+{% block conteudo %}
+<header class="page-header page-header-row">
+    <div>
+        <a class="back-link" href="{{ url_for('vendas.lista') }}"><i class="fa-solid fa-arrow-left"></i> Vendas</a>
+        <h1>Venda nº {{ venda.id }}</h1>
+        <p>{{ venda.data_hora|data_br }}</p>
+    </div>
+    <a class="btn btn-primary" href="{{ url_for('vendas.nova') }}"><i class="fa-solid fa-plus"></i> Nova venda</a>
+</header>
+
+{% if venda.cancelada %}
+<div class="flash flash-erro" role="status">
+    <i class="fa-solid fa-ban"></i>
+    <span>Venda cancelada em {{ venda.cancelada_em|data_br }}. Motivo: {{ venda.motivo_cancelamento }}. Os produtos voltaram ao estoque.</span>
+</div>
+{% endif %}
+
+<section class="card">
+    <div class="table-container">
+        <table class="table-cards">
+            <thead><tr><th>Produto</th><th class="num">Quantidade</th><th class="num">Preço unitário</th><th class="num">Subtotal</th></tr></thead>
+            <tbody>
+            {% for i in venda.itens %}
+                <tr>
+                    <td data-label="Produto"><strong>{{ i.produto.nome }}</strong></td>
+                    <td data-label="Quantidade" class="num">{{ i.quantidade|qtd(i.produto.unidade) }}</td>
+                    <td data-label="Preço unitário" class="num">{{ i.preco_unitario|moeda }}</td>
+                    <td data-label="Subtotal" class="num">{{ i.subtotal|moeda }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="sale-summary">
+        <div><span>Subtotal</span><strong>{{ venda.subtotal|moeda }}</strong></div>
+        <div><span>Desconto</span><strong>{{ venda.desconto|moeda }}</strong></div>
+        <div class="sale-total"><span>Total</span><strong>{{ venda.total|moeda }}</strong></div>
+    </div>
+    {% if venda.observacoes %}<p class="hint"><strong>Observações:</strong> {{ venda.observacoes }}</p>{% endif %}
+    {% if not venda.cancelada %}
+    <div class="form-actions">
+        {{ m.form_cancelar(url_for('vendas.cancelar', venda_id=venda.id), 'Cancelar venda') }}
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
